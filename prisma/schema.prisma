@@ -1,0 +1,214 @@
+// DictatsIA - Multi-tenant schema
+// Generator & datasource
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPERADMIN
+  SCHOOL_COORD
+  TEACHER
+  STUDENT
+}
+
+enum PlanType {
+  AULA
+  ESCOLA
+  XARXA
+}
+
+enum SubmissionStatus {
+  PENDING
+  OCR_PROCESSING
+  OCR_FAILED
+  AI_EVALUATING
+  EVALUATED
+  REVIEWED
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model School {
+  id               String   @id @default(cuid())
+  name             String
+  domain           String   @unique
+  customSubdomain  String?  @unique
+  logo             String?
+  planType         PlanType @default(AULA)
+  neePresets       Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  users       User[]
+  classGroups ClassGroup[]
+
+  @@index([domain])
+}
+
+// ---------------------------------------------------------------------------
+// Identity (NextAuth compatible)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          Role      @default(STUDENT)
+  needsProfile  Json?
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  classGroupId String?
+  classGroup   ClassGroup? @relation("StudentsInClass", fields: [classGroupId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  taughtClassGroups   ClassGroup[]        @relation("TeacherOfClass")
+  dictationsCreated   Dictation[]         @relation("DictationTeacher")
+  submissions         Submission[]        @relation("StudentSubmissions")
+  improvementReports  ImprovementReport[] @relation("StudentReports")
+
+  @@index([schoolId])
+  @@index([classGroupId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Academic structure
+// ---------------------------------------------------------------------------
+
+model ClassGroup {
+  id         String @id @default(cuid())
+  name       String
+  gradeLevel String
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  teacherId String?
+  teacher   User?   @relation("TeacherOfClass", fields: [teacherId], references: [id], onDelete: SetNull)
+
+  students   User[]      @relation("StudentsInClass")
+  dictations Dictation[]
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([teacherId])
+}
+
+// ---------------------------------------------------------------------------
+// Dictation content & submissions
+// ---------------------------------------------------------------------------
+
+model Dictation {
+  id             String  @id @default(cuid())
+  title          String
+  targetRule     String
+  gradeLevel     String
+  rawText        String  @db.Text
+  audioUrl       String?
+  isAIGenerated  Boolean @default(true)
+
+  teacherId String
+  teacher   User   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  classGroupId String?
+  classGroup   ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+  @@index([classGroupId])
+}
+
+model Submission {
+  id            String            @id @default(cuid())
+  dictationId   String
+  dictation     Dictation         @relation(fields: [dictationId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+
+  photoUrl      String?
+  ocrText       String?           @db.Text
+  correctedData Json?
+  score         Float?
+  status        SubmissionStatus  @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dictationId])
+  @@index([studentId])
+}
+
+model ImprovementReport {
+  id              String @id @default(cuid())
+  studentId       String
+  student         User   @relation("StudentReports", fields: [studentId], references: [id], onDelete: Cascade)
+
+  summaryText     String @db.Text
+  weaknessMetrics Json
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+}
