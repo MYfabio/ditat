@@ -10,6 +10,15 @@ const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECR
 const hasMicrosoft =
   !!process.env.AUTH_MICROSOFT_ENTRA_ID_ID && !!process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
 
+// L'acces de prova permet triar qualsevol rol (incloent SUPERADMIN) sense
+// contrasenya: nomes pot existir en desenvolupament. En un desplegament public
+// cal activar-lo explicitament amb ALLOW_DEMO_LOGIN=true, i nomes te sentit
+// mentre no hi hagi dades reals d'alumnat al sistema.
+export const demoLoginEnabled =
+  !hasGoogle &&
+  !hasMicrosoft &&
+  (process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_LOGIN === "true");
+
 // Emparellament per domini: si el correu de l'usuari coincideix amb el domini
 // registrat d'una escola, se li assigna automaticament aquesta escola.
 async function matchSchoolByDomain(email: string) {
@@ -48,9 +57,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }),
         ]
       : []),
-    // Proveidor de proves: nomes actiu si no hi ha cap SSO real configurat.
-    // Permet provar totes les pantalles i rols sense credencials de Google/Microsoft.
-    ...(!hasGoogle && !hasMicrosoft
+    // Proveidor de proves: veure el comentari de `demoLoginEnabled`.
+    ...(demoLoginEnabled
       ? [
           Credentials({
             id: "dev-mock",

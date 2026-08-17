@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { SSOButtons, DevMockLoginForm } from "./login-form";
+import { demoLoginEnabled } from "@/auth";
 
 export default function LoginPage() {
   const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
@@ -23,8 +24,13 @@ export default function LoginPage() {
         <Suspense fallback={<div className="h-40" />}>
           {hasSSO ? (
             <SSOButtons hasGoogle={hasGoogle} hasMicrosoft={hasMicrosoft} />
-          ) : (
+          ) : demoLoginEnabled ? (
             <DevMockLoginForm />
+          ) : (
+            <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+              Aquest centre encara no te configurat l&apos;acces amb Google o Microsoft.
+              Contacta amb la coordinacio del teu centre per activar-lo.
+            </div>
           )}
         </Suspense>
       </div>
