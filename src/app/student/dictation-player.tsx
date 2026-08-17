@@ -21,6 +21,7 @@ import {
   Loader2,
   PartyPopper,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,11 +51,13 @@ export function DictationPlayer({
   title,
   rawText,
   audioUrl,
+  personalised = false,
 }: {
   dictationId: string;
   title: string;
   rawText: string;
   audioUrl: string | null;
+  personalised?: boolean;
 }) {
   const router = useRouter();
   const chunks = useMemo(() => chunkSentences(rawText), [rawText]);
@@ -139,11 +142,19 @@ export function DictationPlayer({
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold">{title}</h3>
-        <Badge variant="outline">
-          Frase {chunkIndex + 1} / {chunks.length}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {personalised && (
+            <Badge>
+              <Sparkles className="size-3" />
+              Fet per a tu
+            </Badge>
+          )}
+          <Badge variant="outline">
+            Frase {chunkIndex + 1} / {chunks.length}
+          </Badge>
+        </div>
       </div>
 
       <p className="rounded-md bg-muted/40 p-4 text-lg leading-relaxed">{chunks[chunkIndex]}</p>

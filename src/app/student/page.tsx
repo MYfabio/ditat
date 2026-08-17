@@ -7,20 +7,31 @@ import { Badge } from "@/components/ui/badge";
 import { AccessibilityToggles } from "./accessibility-toggles";
 import { DictationPlayer } from "./dictation-player";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
+import { ruleLabel } from "@/lib/dictation-rules";
 
 async function loadStudentData(studentId: string, classGroupId: string | null) {
   try {
-    const [dictations, submissions] = await Promise.all([
-      classGroupId
-        ? prisma.dictation.findMany({ where: { classGroupId }, orderBy: { createdAt: "desc" } })
-        : Promise.resolve([]),
+    const [dictations, submissions, latestReport] = await Promise.all([
+      prisma.dictation.findMany({
+        where: {
+          OR: [
+            { targetStudentId: studentId },
+            ...(classGroupId ? [{ classGroupId, targetStudentId: null }] : []),
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      }),
       prisma.submission.findMany({
         where: { studentId },
         include: { dictation: true },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.improvementReport.findFirst({
+        where: { studentId },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
-    return { dbAvailable: true as const, dictations, submissions };
+    return { dbAvailable: true as const, dictations, submissions, latestReport };
   } catch {
     return { dbAvailable: false as const };
   }
@@ -61,6 +72,10 @@ export default async function StudentPage() {
 
   const dictations = data.dbAvailable ? data.dictations : [];
   const submissions = data.dbAvailable ? data.submissions : [];
+  const metrics = (data.dbAvailable ? data.latestReport?.weaknessMetrics : null) as {
+    perRule?: { rule: string; averageScore: number; mastered: boolean; attempts: number }[];
+    curriculumProgress?: { expected: number; mastered: number };
+  } | null;
 
   const bestScore = submissions.reduce((max, s) => Math.max(max, s.score ?? 0), 0);
   const streak = computeStreak(submissions.map((s) => s.createdAt));
@@ -111,6 +126,7 @@ export default async function StudentPage() {
                   title={d.title}
                   rawText={d.rawText}
                   audioUrl={d.audioUrl}
+                  personalised={!!d.targetStudentId}
                 />
               ))
             )}
@@ -164,6 +180,41 @@ export default async function StudentPage() {
             )}
           </CardContent>
         </Card>
+
+        {metrics?.perRule && metrics.perRule.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Com vaig amb cada regla</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {metrics.curriculumProgress && (
+                <p className="text-sm text-muted-foreground">
+                  Has consolidat{" "}
+                  <strong className="text-foreground">
+                    {metrics.curriculumProgress.mastered} de {metrics.curriculumProgress.expected}
+                  </strong>{" "}
+                  regles que et toquen pel teu curs.
+                </p>
+              )}
+              <div className="space-y-2.5">
+                {metrics.perRule.map((r) => (
+                  <div key={r.rule} className="flex items-center gap-3 text-sm">
+                    <span className="w-40 shrink-0 truncate">{ruleLabel(r.rule)}</span>
+                    <div className="h-2 flex-1 rounded-full bg-muted">
+                      <div
+                        className={`h-2 rounded-full ${r.mastered ? "bg-primary" : "bg-amber-500"}`}
+                        style={{ width: `${r.averageScore}%` }}
+                      />
+                    </div>
+                    <span className="w-10 shrink-0 text-right text-muted-foreground">
+                      {r.averageScore}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </>
   );

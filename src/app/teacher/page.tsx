@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
+import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { ruleLabel } from "@/lib/dictation-rules";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
@@ -13,15 +14,22 @@ type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
 
 async function loadTeacherData(teacherId: string) {
   try {
-    const [classGroups, dictations] = await Promise.all([
+    const [classGroups, dictations, students] = await Promise.all([
       prisma.classGroup.findMany({ where: { teacherId }, orderBy: { name: "asc" } }),
       prisma.dictation.findMany({
         where: { teacherId },
         include: { submissions: { include: { student: true } } },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.user.findMany({
+        where: { role: "STUDENT", classGroup: { teacherId } },
+        orderBy: { name: "asc" },
+        include: {
+          improvementReports: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
+      }),
     ]);
-    return { dbAvailable: true as const, classGroups, dictations };
+    return { dbAvailable: true as const, classGroups, dictations, students };
   } catch {
     return { dbAvailable: false as const };
   }
@@ -49,6 +57,33 @@ export default async function TeacherPage() {
           };
         })
       )
+    : [];
+
+  const studentProfiles: StudentProfileView[] = data.dbAvailable
+    ? data.students
+        .map((student) => {
+          const metrics = student.improvementReports[0]?.weaknessMetrics as {
+            totalSubmissions?: number;
+            averageScore?: number;
+            perRule?: StudentProfileView["perRule"];
+            curriculumProgress?: StudentProfileView["curriculumProgress"];
+            observations?: StudentProfileView["observations"];
+          } | null;
+          return {
+            studentId: student.id,
+            studentName: student.name || student.email,
+            totalSubmissions: metrics?.totalSubmissions ?? 0,
+            averageScore: metrics?.averageScore ?? 0,
+            perRule: metrics?.perRule ?? [],
+            curriculumProgress: metrics?.curriculumProgress ?? {
+              expected: 0,
+              mastered: 0,
+              pending: [],
+            },
+            observations: metrics?.observations ?? [],
+          };
+        })
+        .filter((p) => p.totalSubmissions > 0)
     : [];
 
   const errorTally = new Map<string, number>();
@@ -89,6 +124,7 @@ export default async function TeacherPage() {
           <TabsList>
             <TabsTrigger value="generador">Generador de dictats</TabsTrigger>
             <TabsTrigger value="analitiques">Analitiques de classe</TabsTrigger>
+            <TabsTrigger value="alumnat">Seguiment individual</TabsTrigger>
             <TabsTrigger value="entregues">Revisor d&apos;entregues</TabsTrigger>
           </TabsList>
 
@@ -156,6 +192,10 @@ export default async function TeacherPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="alumnat">
+            <StudentProfiles profiles={studentProfiles} />
           </TabsContent>
 
           <TabsContent value="entregues">

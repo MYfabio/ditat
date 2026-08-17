@@ -82,10 +82,11 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  taughtClassGroups   ClassGroup[]        @relation("TeacherOfClass")
-  dictationsCreated   Dictation[]         @relation("DictationTeacher")
-  submissions         Submission[]        @relation("StudentSubmissions")
-  improvementReports  ImprovementReport[] @relation("StudentReports")
+  taughtClassGroups      ClassGroup[]        @relation("TeacherOfClass")
+  dictationsCreated      Dictation[]         @relation("DictationTeacher")
+  personalisedDictations Dictation[]         @relation("PersonalisedDictations")
+  submissions            Submission[]        @relation("StudentSubmissions")
+  improvementReports     ImprovementReport[] @relation("StudentReports")
 
   @@index([schoolId])
   @@index([classGroupId])
@@ -170,6 +171,11 @@ model Dictation {
   classGroupId String?
   classGroup   ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
 
+  // Quan s'omple, el dictat es personalitzat per a aquest alumne concret
+  // (generat a partir del seu historial d'errors) en lloc de ser per a tot el grup.
+  targetStudentId String?
+  targetStudent   User?   @relation("PersonalisedDictations", fields: [targetStudentId], references: [id], onDelete: Cascade)
+
   submissions Submission[]
 
   createdAt DateTime @default(now())
@@ -177,6 +183,7 @@ model Dictation {
 
   @@index([teacherId])
   @@index([classGroupId])
+  @@index([targetStudentId])
 }
 
 model Submission {

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractTextFromImage } from "@/lib/ai/ocr";
 import { evaluateSubmission } from "@/lib/ai/evaluate-submission";
+import { refreshLearningProfile } from "@/lib/adaptive-dictations";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -48,9 +49,18 @@ export async function POST(req: Request) {
       },
     });
 
+    // Actualitza el perfil d'aprenentatge i prepara el seguent dictat adaptat.
+    // Si falla, l'entrega ja esta desada: no ha de trencar la resposta a l'alumne.
+    const profile = await refreshLearningProfile(session.user.id).catch(() => null);
+
     return NextResponse.json({
       submission: updated,
       mocked: ocr.mocked || evaluation.mocked,
+      profile: profile && {
+        averageScore: profile.averageScore,
+        weakestRule: profile.weakestRule,
+        curriculumProgress: profile.curriculumProgress,
+      },
     });
   } catch {
     return NextResponse.json(
