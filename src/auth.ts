@@ -25,6 +25,8 @@ async function matchSchoolByDomain(email: string) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  // Necessari darrere de proxys com Railway/Fly.io, que no son autodetectats per Auth.js.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
