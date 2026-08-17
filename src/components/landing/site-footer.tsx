@@ -17,7 +17,7 @@ export function SiteFooter() {
             Privadesa
           </Link>
           <Link href="/login" className="hover:text-foreground">
-            Iniciar sessio
+            Iniciar sessió
           </Link>
         </div>
       </div>

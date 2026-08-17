@@ -4,27 +4,27 @@ import { Sparkles, ScanText, HeartHandshake, LayoutDashboard } from "lucide-reac
 const FEATURES = [
   {
     icon: Sparkles,
-    title: "Generacio de text amb IA",
+    title: "Generació de text amb IA",
     description:
-      "Dictats nous cada setmana ajustats a una regla ortografica concreta: l·l, b/v, dieresi i moltes mes, segons el curs de l'alumnat.",
+      "Dictats nous cada setmana ajustats a una regla ortogràfica concreta: l·l, b/v, dièresi i moltes més, segons el curs de l'alumnat.",
   },
   {
     icon: ScanText,
     title: "Escaneig OCR de fotos",
     description:
-      "L'alumnat fotografia el dictat fet a ma i la IA en transcriu i corregeix el text automaticament, sense feina manual del docent.",
+      "L'alumnat fotografia el dictat fet a mà i la IA en transcriu i corregeix el text automàticament, sense feina manual del docent.",
   },
   {
     icon: HeartHandshake,
-    title: "Inclusio NEE",
+    title: "Inclusió NEE",
     description:
-      "Tipografia OpenDyslexic, alt contrast i fragmentacio del text en frases curtes per facilitar el ritme de lectura a l'alumnat amb TDAH.",
+      "Tipografia OpenDyslexic, alt contrast i fragmentació del text en frases curtes per facilitar el ritme de lectura a l'alumnat amb TDAH.",
   },
   {
     icon: LayoutDashboard,
-    title: "Diagnostic per al docent",
+    title: "Diagnòstic per al docent",
     description:
-      "Panells amb els errors ortografics mes frequents de cada classe i l'evolucio individual de cada alumne al llarg del curs.",
+      "Panells amb els errors ortogràfics més freqüents de cada classe i l'evolució individual de cada alumne al llarg del curs.",
   },
 ];
 
@@ -37,7 +37,7 @@ export function FeatureGrid() {
             Tot el que necessites per fer dictats amb IA
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Des de la creacio del dictat fins a la correccio i el seguiment de
+            Des de la creació del dictat fins a la correcció i el seguiment de
             l&apos;alumnat.
           </p>
         </div>

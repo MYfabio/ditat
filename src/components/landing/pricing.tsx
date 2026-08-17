@@ -10,21 +10,21 @@ const PLANS = [
     description: "Per a un sol docent que vol provar DictatsIA amb la seva classe.",
     features: [
       "1 docent i fins a 30 alumnes",
-      "Generacio de dictats amb IA",
-      "Correccio per foto (OCR + IA)",
-      "Suport per correu electronic",
+      "Generació de dictats amb IA",
+      "Correcció per foto (OCR + IA)",
+      "Suport per correu electrònic",
     ],
     highlight: false,
   },
   {
     name: "Pla Escola",
     price: "Consulta'ns",
-    description: "Per a un centre educatiu sencer amb multiples cursos i docents.",
+    description: "Per a un centre educatiu sencer amb múltiples cursos i docents.",
     features: [
       "Docents i alumnat il·limitats",
       "SSO amb Google / Microsoft",
-      "Panell de coordinacio de centre",
-      "Adaptacions NEE (TDAH, dislexia)",
+      "Panell de coordinació de centre",
+      "Adaptacions NEE (TDAH, dislèxia)",
       "Suport prioritari",
     ],
     highlight: true,
@@ -34,9 +34,9 @@ const PLANS = [
     price: "Consulta'ns",
     description: "Per a consorcis educatius o ajuntaments amb diversos centres.",
     features: [
-      "Multiples escoles centralitzades",
-      "Metriques agregades per xarxa",
-      "Auditoria RGPD i exportacio de dades",
+      "Múltiples escoles centralitzades",
+      "Mètriques agregades per xarxa",
+      "Auditoria RGPD i exportació de dades",
       "Gestor de compte dedicat",
     ],
     highlight: false,
@@ -63,7 +63,7 @@ export function Pricing() {
             >
               <CardHeader>
                 {plan.highlight && (
-                  <Badge className="mb-2 w-fit">Mes popular</Badge>
+                  <Badge className="mb-2 w-fit">Més popular</Badge>
                 )}
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
                 <p className="text-2xl font-bold">{plan.price}</p>

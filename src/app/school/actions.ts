@@ -11,7 +11,7 @@ async function requireCoordinator() {
     throw new Error("No autoritzat.");
   }
   if (!session.user.schoolId) {
-    throw new Error("El teu usuari no te cap escola assignada.");
+    throw new Error("El teu usuari no té cap escola assignada.");
   }
   return session.user;
 }
@@ -39,7 +39,7 @@ export async function importUsersCsv(csvText: string): Promise<CsvImportResult> 
     if (!email || !email.includes("@")) {
       if (line) {
         result.skipped++;
-        result.errors.push(`Linia ${index + 1}: correu invalid.`);
+        result.errors.push(`Línia ${index + 1}: correu invàlid.`);
       }
       continue;
     }

@@ -5,7 +5,7 @@ import { UserMenu } from "@/components/dashboard/user-menu";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
-  SCHOOL_COORD: "Coordinacio d'escola",
+  SCHOOL_COORD: "Coordinació d'escola",
   TEACHER: "Docent",
   STUDENT: "Alumne/a",
 };

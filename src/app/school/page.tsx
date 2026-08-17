@@ -54,8 +54,8 @@ export default async function SchoolPage() {
   return (
     <>
       <DashboardHeader
-        title="Panell de Coordinacio d'Escola"
-        subtitle="Importacio d'usuaris, grups classe i adaptacions NEE del centre."
+        title="Panell de Coordinació d'Escola"
+        subtitle="Importació d'usuaris, grups classe i adaptacions NEE del centre."
         role="SCHOOL_COORD"
         userName={session?.user?.name}
         userEmail={session?.user?.email}
@@ -64,7 +64,7 @@ export default async function SchoolPage() {
         {!data.dbAvailable && <DbNotice />}
         {data.dbAvailable && !schoolId && (
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            El teu usuari encara no te cap escola assignada. Demana al superadministrador que
+            El teu usuari encara no té cap escola assignada. Demana al superadministrador que
             registri el domini del teu centre.
           </div>
         )}
@@ -80,7 +80,7 @@ export default async function SchoolPage() {
             <TabsContent value="importar">
               <Card>
                 <CardHeader>
-                  <CardTitle>Importacio massiva per CSV</CardTitle>
+                  <CardTitle>Importació massiva per CSV</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CsvImportForm />
@@ -237,7 +237,7 @@ export default async function SchoolPage() {
             <TabsContent value="nee">
               <Card>
                 <CardHeader>
-                  <CardTitle>Preajustos globals d&apos;adaptacio NEE</CardTitle>
+                  <CardTitle>Preajustos globals d&apos;adaptació NEE</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-4 text-sm text-muted-foreground">

@@ -10,7 +10,7 @@ export function DemoCta() {
         </h2>
         <p className="max-w-xl text-primary-foreground/90">
           Escriu-nos i t&apos;ensenyarem com DictatsIA pot estalviar hores de
-          correccio al teu equip docent aquest mateix curs.
+          correcció al teu equip docent aquest mateix curs.
         </p>
         <Button
           size="lg"

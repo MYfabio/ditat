@@ -38,7 +38,7 @@ export function UserMenu({ name, email }: { name?: string | null; email?: string
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
           <LogOut />
-          Tancar sessio
+          Tancar sessió
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

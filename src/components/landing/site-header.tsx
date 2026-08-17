@@ -26,7 +26,7 @@ export function SiteHeader() {
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
-            Iniciar sessio
+            Iniciar sessió
           </Button>
           <Button nativeButton={false} render={<a href="#demo" />}>
             Demana Demo

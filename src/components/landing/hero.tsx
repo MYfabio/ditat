@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, BookOpenCheck, KeyRound } from "lucide-react";
 
 const BADGES = [
-  { icon: BookOpenCheck, label: "100% Curriculum de Catalunya" },
+  { icon: BookOpenCheck, label: "100% Currículum de Catalunya" },
   { icon: ShieldCheck, label: "RGPD Educatiu" },
   { icon: KeyRound, label: "Google / Microsoft SSO" },
 ];
@@ -13,13 +13,13 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:py-28">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            El primer generador de dictats en catala amb{" "}
-            <span className="text-primary">IA</span> i correccio per foto
+            El primer generador de dictats en català amb{" "}
+            <span className="text-primary">IA</span> i correcció per foto
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            DictatsIA genera dictats personalitzats segons el curriculum catala,
-            corregeix fotos de dictats manuscrits amb intel·ligencia artificial i
-            adapta l&apos;experiencia per a alumnat amb TDAH i dislexia.
+            DictatsIA genera dictats personalitzats segons el currículum català,
+            corregeix fotos de dictats manuscrits amb intel·ligència artificial i
+            adapta l&apos;experiència per a alumnat amb TDAH i dislèxia.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button

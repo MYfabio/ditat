@@ -27,17 +27,17 @@ export async function generateDictationText(
 
   const neeInstruction =
     neeAdaptation === "tdah"
-      ? "Escriu frases curtes (maxim 12 paraules) per facilitar la lectura fragmentada per a alumnat amb TDAH."
+      ? "Escriu frases curtes (màxim 12 paraules) per facilitar la lectura fragmentada per a alumnat amb TDAH."
       : neeAdaptation === "dislexia"
-        ? "Evita paraules molt llargues o poc frequents i utilitza estructures sintactiques simples, pensant en alumnat amb dislexia."
+        ? "Evita paraules molt llargues o poc freqüents i utilitza estructures sintactiques simples, pensant en alumnat amb dislèxia."
         : "";
 
-  const prompt = `Ets un mestre expert en llengua catalana seguint el curriculum del Departament d'Educacio de Catalunya.
-Genera un text de dictat en catala, adequat per a l'alumnat de ${gradeLabel(gradeLevel)}, que posi
-especial emfasi en la regla ortografica seguent: "${ruleLabel(targetRule)}".
+  const prompt = `Ets un mestre expert en llengua catalana seguint el currículum del Departament d'Educació de Catalunya.
+Genera un text de dictat en català, adequat per a l'alumnat de ${gradeLabel(gradeLevel)}, que posi
+especial emfasi en la regla ortogràfica següent: "${ruleLabel(targetRule)}".
 El text ha de tenir entre 3 i 5 frases, un vocabulari natural i proper a l'alumnat, sense encapcalaments ni explicacions.
 ${neeInstruction}
-Respon nomes amb el text del dictat, sense cometes ni comentaris addicionals.`;
+Respon només amb el text del dictat, sense cometes ni comentaris addicionals.`;
 
   try {
     const message = await client.messages.create({

@@ -36,6 +36,11 @@ enum SubmissionStatus {
   REVIEWED
 }
 
+enum InputMethod {
+  PHOTO
+  KEYBOARD
+}
+
 // ---------------------------------------------------------------------------
 // Tenant
 // ---------------------------------------------------------------------------
@@ -195,7 +200,10 @@ model Submission {
   student   User   @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
 
   photoUrl      String?
+  // Text de l'alumne: transcrit per OCR si ve d'una foto, o escrit directament
+  // amb el teclat. `inputMethod` diu d'on ve.
   ocrText       String?           @db.Text
+  inputMethod   InputMethod       @default(PHOTO)
   correctedData Json?
   score         Float?
   status        SubmissionStatus  @default(PENDING)

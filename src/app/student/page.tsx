@@ -155,13 +155,13 @@ export default async function StudentPage() {
             {streak > 0 && (
               <p className="flex items-center gap-2 text-sm">
                 <Flame className="size-4 text-primary" />
-                Portes <strong>{streak}</strong> dia(es) seguits fent dictats. Continua aixi!
+                Portes <strong>{streak}</strong> dia(es) seguits fent dictats. Continua així!
               </p>
             )}
 
             {submissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Encara no has fet cap dictat. Comenca&apos;n un aqui a sobre!
+                Encara no has fet cap dictat. Comença&apos;n un aquí a sobre!
               </p>
             ) : (
               <ul className="space-y-2">

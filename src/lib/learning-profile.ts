@@ -31,7 +31,7 @@ export type LearningProfile = {
   summaryText: string;
 };
 
-type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
+type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicació: string };
 
 function readErrors(correctedData: unknown): EvaluationError[] {
   if (!correctedData || typeof correctedData !== "object") return [];
@@ -39,7 +39,7 @@ function readErrors(correctedData: unknown): EvaluationError[] {
   return Array.isArray(errors) ? (errors as EvaluationError[]) : [];
 }
 
-// Parells de lletres que s'inverteixen o giren amb mes frequencia.
+// Parells de lletres que s'inverteixen o giren amb mes freqüència.
 const REVERSAL_PAIRS = [
   ["b", "d"],
   ["p", "q"],
@@ -85,7 +85,7 @@ const MASTERY_SCORE = 85;
 const MIN_ATTEMPTS_FOR_MASTERY = 2;
 
 // Llindars deliberadament conservadors: cap observacio salta abans d'acumular
-// prou evidencia repetida, perque un avis en fals te un cost pedagogic alt.
+// prou evidencia repetida, perquè un avis en fals te un cost pedagogic alt.
 const MIN_SUBMISSIONS_FOR_OBSERVATIONS = 4;
 const MIN_REVERSALS = 5;
 const MIN_OMISSIONS = 6;
@@ -134,8 +134,8 @@ export function buildLearningProfile(
     };
   });
 
-  // La regla mes fluixa es la de pitjor mitjana; si encara no s'ha practicat
-  // cap regla del curriculum del seu curs, es prioritza la primera pendent.
+  // La regla més fluixa es la de pitjor mitjana; si encara no s'ha practicat
+  // cap regla del currículum del seu curs, es prioritza la primera pendent.
   const practised = [...perRule].sort((a, b) => a.averageScore - b.averageScore);
   const expectedRules = rulesExpectedAt(gradeLevel);
   const neverPractised = expectedRules.filter((r) => !byRule.has(r.value));
@@ -175,8 +175,8 @@ export function buildLearningProfile(
     if (persistent.length) {
       observations.push({
         key: "persistent",
-        label: "Dificultat persistent malgrat la practica",
-        detail: `Regles amb poca millora despres de ${PERSISTENT_MIN_ATTEMPTS} o mes intents: ${persistent
+        label: "Dificultat persistent malgrat la pràctica",
+        detail: `Regles amb poca millora després de ${PERSISTENT_MIN_ATTEMPTS} o mes intents: ${persistent
           .map((p) => p.rule)
           .join(", ")}.`,
       });
@@ -186,7 +186,7 @@ export function buildLearningProfile(
   const summaryText = totalSubmissions
     ? `${totalSubmissions} dictats corregits amb una mitjana del ${averageScore}%. ${
         masteredCount
-      } de ${expectedRules.length} regles del curriculum del seu curs consolidades.`
+      } de ${expectedRules.length} regles del currículum del seu curs consolidades.`
     : "Encara no hi ha dictats corregits per elaborar un perfil.";
 
   return {

@@ -7,7 +7,7 @@ export function DbNotice() {
       <p>
         No hi ha cap base de dades connectada (falta{" "}
         <code className="rounded bg-black/10 px-1 py-0.5 dark:bg-white/10">DATABASE_URL</code> a
-        l&apos;entorn). Aquesta pantalla mostra la interficie completa, pero no pot desar ni
+        l&apos;entorn). Aquesta pantalla mostra la interficie completa, però no pot desar ni
         llegir dades reals fins que es connecti una base de dades PostgreSQL.
       </p>
     </div>

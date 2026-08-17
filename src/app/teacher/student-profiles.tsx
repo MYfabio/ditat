@@ -39,10 +39,10 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
             <div className="flex items-start gap-2 rounded-md border border-amber-400/40 bg-background/60 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" />
               <p>
-                Aixo <strong className="text-foreground">no es cap diagnostic</strong>. DictatsIA
-                nomes descriu patrons observats als dictats. Nomes un professional
-                (psicopedagog/a o logopeda) pot valorar si hi ha una dificultat especifica
-                d&apos;aprenentatge. Fes servir aquesta informacio unicament com a punt de
+                Això <strong className="text-foreground">no es cap diagnòstic</strong>. DictatsIA
+                només descriu patrons observats als dictats. Només un professional
+                (psicopedagog/a o logopeda) pot valorar si hi ha una dificultat específica
+                d&apos;aprenentatge. Fes servir aquesta informació unicament com a punt de
                 partida per parlar amb l&apos;equip d&apos;orientacio del centre.
               </p>
             </div>

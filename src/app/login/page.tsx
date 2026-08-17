@@ -28,16 +28,16 @@ export default function LoginPage() {
             <DevMockLoginForm />
           ) : (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-              Aquest centre encara no te configurat l&apos;acces amb Google o Microsoft.
-              Contacta amb la coordinacio del teu centre per activar-lo.
+              Aquest centre encara no té configurat l&apos;accés amb Google o Microsoft.
+              Contacta amb la coordinació del teu centre per activar-lo.
             </div>
           )}
         </Suspense>
       </div>
       <p className="mt-6 max-w-sm text-center text-xs text-muted-foreground">
-        En iniciar sessio acceptes la nostra{" "}
+        En iniciar sessió acceptes la nostra{" "}
         <Link href="/privacitat" className="underline underline-offset-2">
-          politica de privadesa
+          política de privadesa
         </Link>{" "}
         conforme al RGPD educatiu.
       </p>

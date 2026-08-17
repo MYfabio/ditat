@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     neeAdaptation,
   });
 
-  // El widget public de la landing nomes vol el text, sense persistir res a la BD.
+  // El widget públic de la landing només vol el text, sense persistir res a la BD.
   if (preview) {
     return NextResponse.json({ title, text, mocked });
   }
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json(
       {
-        error: "Base de dades no configurada (DATABASE_URL). El text s'ha generat pero no s'ha desat.",
+        error: "Base de dades no configurada (DATABASE_URL). El text s'ha generat però no s'ha desat.",
         preview: { title, text, mocked },
       },
       { status: 503 }

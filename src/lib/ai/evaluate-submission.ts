@@ -3,7 +3,7 @@ import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 export type EvaluationError = {
   paraulaOriginal: string;
   paraulaEscrita: string;
-  explicacio: string;
+  explicació: string;
 };
 
 export type EvaluationResult = {
@@ -34,13 +34,13 @@ function mockEvaluate(originalText: string, ocrText: string): EvaluationResult {
       errors.push({
         paraulaOriginal: o,
         paraulaEscrita: "(falta)",
-        explicacio: "Sembla que falta aquesta paraula en el text escrit.",
+        explicació: "Sembla que falta aquesta paraula en el text escrit.",
       });
     } else if (o.toLowerCase() !== w.toLowerCase()) {
       errors.push({
         paraulaOriginal: o,
         paraulaEscrita: w,
-        explicacio: "Revisa l'ortografia d'aquesta paraula comparant-la amb el text original.",
+        explicació: "Revisa l'ortografia d'aquesta paraula comparant-la amb el text original.",
       });
     }
   }
@@ -48,7 +48,7 @@ function mockEvaluate(originalText: string, ocrText: string): EvaluationResult {
   const score = Math.max(0, Math.round(((total - errors.length) / total) * 100));
   const feedback =
     errors.length === 0
-      ? "Molt be! El dictat esta escrit correctament, sense errors detectats."
+      ? "Molt bé! El dictat està escrit correctament, sense errors detectats."
       : `Bona feina. S'han detectat ${errors.length} paraula(es) per revisar. Fixa't en aquestes errades per millorar la propera vegada.`;
 
   return { score, errors, feedback, mocked: true };
@@ -65,7 +65,7 @@ export async function evaluateSubmission(
 
   const prompt = `Ets un mestre de llengua catalana que corregeix dictats d'alumnat de primaria i secundaria.
 Compara el TEXT ORIGINAL del dictat amb el TEXT ESCRIT per l'alumne (obtingut per OCR d'una foto manuscrita).
-Identifica els errors ortografics i dona una puntuacio de 0 a 100.
+Identifica els errors ortogràfics i dóna una puntuació de 0 a 100.
 
 TEXT ORIGINAL:
 """${originalText}"""
@@ -73,13 +73,13 @@ TEXT ORIGINAL:
 TEXT ESCRIT PER L'ALUMNE:
 """${ocrText}"""
 
-Respon NOMES amb un JSON valid amb aquesta forma exacta, sense cap text addicional:
+Respon NOMÉS amb un JSON vàlid amb aquesta forma exacta, sense cap text addicional:
 {
   "score": number,
-  "errors": [{ "paraulaOriginal": string, "paraulaEscrita": string, "explicacio": string }],
+  "errors": [{ "paraulaOriginal": string, "paraulaEscrita": string, "explicació": string }],
   "feedback": string
 }
-El camp "feedback" ha de ser un missatge curt, positiu i pedagogic en catala per a l'alumne.`;
+El camp "feedback" ha de ser un missatge curt, positiu i pedagogic en català per a l'alumne.`;
 
   try {
     const message = await client.messages.create({

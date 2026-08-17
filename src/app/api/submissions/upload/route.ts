@@ -12,11 +12,17 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { dictationId, photoDataUrl } = body as { dictationId?: string; photoDataUrl?: string };
+  const { dictationId, photoDataUrl, typedText } = body as {
+    dictationId?: string;
+    photoDataUrl?: string;
+    typedText?: string;
+  };
 
-  if (!dictationId || !photoDataUrl) {
+  const typed = typedText?.trim();
+
+  if (!dictationId || (!photoDataUrl && !typed)) {
     return NextResponse.json(
-      { error: "Falten els camps dictationId i photoDataUrl." },
+      { error: "Cal enviar una foto del dictat o el text escrit amb el teclat." },
       { status: 400 }
     );
   }
@@ -31,31 +37,36 @@ export async function POST(req: Request) {
       data: {
         dictationId,
         studentId: session.user.id,
-        photoUrl: photoDataUrl,
-        status: "OCR_PROCESSING",
+        photoUrl: typed ? null : photoDataUrl,
+        inputMethod: typed ? "KEYBOARD" : "PHOTO",
+        status: typed ? "AI_EVALUATING" : "OCR_PROCESSING",
       },
     });
 
-    const ocr = await extractTextFromImage(photoDataUrl);
-    const evaluation = await evaluateSubmission(dictation.rawText, ocr.text);
+    // El text escrit amb el teclat ja es definitiu: només les fotos passen per OCR.
+    const studentText = typed ?? (await extractTextFromImage(photoDataUrl!));
+    const text = typeof studentText === "string" ? studentText : studentText.text;
+    const ocrMocked = typeof studentText === "string" ? false : studentText.mocked;
+
+    const evaluation = await evaluateSubmission(dictation.rawText, text);
 
     const updated = await prisma.submission.update({
       where: { id: submission.id },
       data: {
-        ocrText: ocr.text,
+        ocrText: text,
         correctedData: { errors: evaluation.errors, feedback: evaluation.feedback },
         score: evaluation.score,
         status: "EVALUATED",
       },
     });
 
-    // Actualitza el perfil d'aprenentatge i prepara el seguent dictat adaptat.
+    // Actualitza el perfil d'aprenentatge i prepara el següent dictat adaptat.
     // Si falla, l'entrega ja esta desada: no ha de trencar la resposta a l'alumne.
     const profile = await refreshLearningProfile(session.user.id).catch(() => null);
 
     return NextResponse.json({
       submission: updated,
-      mocked: ocr.mocked || evaluation.mocked,
+      mocked: ocrMocked || evaluation.mocked,
       profile: profile && {
         averageScore: profile.averageScore,
         weakestRule: profile.weakestRule,

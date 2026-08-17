@@ -23,7 +23,7 @@ export type ReviewSubmission = {
   score: number | null;
   status: string;
   createdAt: string;
-  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+  errors: { paraulaOriginal: string; paraulaEscrita: string; explicació: string }[];
   feedback: string | null;
 };
 
@@ -60,7 +60,7 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
               <TableRow>
                 <TableHead>Alumne/a</TableHead>
                 <TableHead>Dictat</TableHead>
-                <TableHead>Puntuacio</TableHead>
+                <TableHead>Puntuació</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -122,14 +122,14 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
             {selected.errors.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  Correccio proposada per la IA
+                  Correcció proposada per la IA
                 </p>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Original</TableHead>
                       <TableHead>Escrit</TableHead>
-                      <TableHead>Explicacio</TableHead>
+                      <TableHead>Explicació</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -137,7 +137,7 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
                       <TableRow key={i}>
                         <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
                         <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                        <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
+                        <TableCell className="text-muted-foreground">{err.explicació}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

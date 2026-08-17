@@ -50,7 +50,7 @@ export function LiveWidget() {
             Prova el generador ara mateix
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Tria un curs i una regla ortografica: la IA et proposara un dictat de
+            Tria un curs i una regla ortogràfica: la IA et proposarà un dictat de
             mostra a l&apos;instant.
           </p>
         </div>
@@ -76,7 +76,7 @@ export function LiveWidget() {
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  Regla ortografica
+                  Regla ortogràfica
                 </label>
                 <Select value={targetRule} onValueChange={(v) => v && setTargetRule(v)}>
                   <SelectTrigger className="w-full">

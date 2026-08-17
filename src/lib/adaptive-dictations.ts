@@ -5,8 +5,8 @@ import { ruleLabel } from "@/lib/dictation-rules";
 
 /**
  * Recalcula el perfil d'aprenentatge d'un alumne a partir de tot el seu
- * historial, el desa com a ImprovementReport i li deixa preparat el seguent
- * dictat personalitzat centrat en la seva regla mes fluixa.
+ * historial, el desa com a ImprovementReport i li deixa preparat el següent
+ * dictat personalitzat centrat en la seva regla més fluixa.
  */
 export async function refreshLearningProfile(studentId: string): Promise<LearningProfile | null> {
   const student = await prisma.user.findUnique({
@@ -51,8 +51,8 @@ async function preparePersonalisedDictation(
 ) {
   if (!profile.weakestRule) return;
 
-  // Nomes hi ha d'haver un dictat personalitzat pendent alhora: si l'anterior
-  // encara no s'ha entregat, se substitueix pel nou (mes ben orientat).
+  // Només hi ha d'haver un dictat personalitzat pendent alhora: si l'anterior
+  // encara no s'ha entregat, se substitueix pel nou (més ben orientat).
   const pending = await prisma.dictation.findFirst({
     where: { targetStudentId: studentId, submissions: { none: {} } },
     orderBy: { createdAt: "desc" },

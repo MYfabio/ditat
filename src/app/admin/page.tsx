@@ -60,7 +60,7 @@ async function loadAdminData() {
         id: `submission-${s.id}`,
         type: "Entrega corregida" as const,
         actor: s.student.name || s.student.email,
-        detail: `Puntuacio: ${s.score ?? "-"}`,
+        detail: `Puntuació: ${s.score ?? "-"}`,
         date: s.createdAt,
       })),
     ].sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -86,7 +86,7 @@ export default async function AdminPage() {
     <>
       <DashboardHeader
         title="Panell de Superadministrador"
-        subtitle="Gestio d'escoles, metriques d'us i auditoria RGPD."
+        subtitle="Gestió d'escoles, mètriques d'ús i auditoria RGPD."
         role="SUPERADMIN"
         userName={session?.user?.name}
         userEmail={session?.user?.email}
@@ -97,7 +97,7 @@ export default async function AdminPage() {
         <Tabs defaultValue="escoles">
           <TabsList>
             <TabsTrigger value="escoles">Escoles</TabsTrigger>
-            <TabsTrigger value="metriques">Metriques</TabsTrigger>
+            <TabsTrigger value="metriques">Mètriques</TabsTrigger>
             <TabsTrigger value="auditoria">Auditoria RGPD</TabsTrigger>
           </TabsList>
 
@@ -204,7 +204,7 @@ export default async function AdminPage() {
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
               El consum detallat de tokens d&apos;IA per escola requereix connectar la
-              facturacio d&apos;Anthropic / OpenAI; de moment es mostren comptadors d&apos;us
+              facturació d&apos;Anthropic / OpenAI; de moment es mostren comptadors d&apos;ús
               reals de la plataforma.
             </p>
           </TabsContent>

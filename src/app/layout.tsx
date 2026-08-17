@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DictatsIA | Generador de dictats amb IA per a escoles catalanes",
   description:
-    "El primer generador de dictats en catala amb IA i correccio per foto. Dictats personalitzats, OCR de fotos manuscrites i suport NEE per a TDAH i dislexia.",
+    "El primer generador de dictats en català amb IA i correcció per foto. Dictats personalitzats, OCR de fotos manuscrites i suport NEE per a TDAH i dislèxia.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

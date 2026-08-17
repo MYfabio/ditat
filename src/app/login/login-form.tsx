@@ -18,7 +18,7 @@ import { Loader2 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
-  SCHOOL_COORD: "Coordinacio d'escola",
+  SCHOOL_COORD: "Coordinació d'escola",
   TEACHER: "Docent",
   STUDENT: "Alumne/a",
 };
@@ -88,7 +88,7 @@ export function DevMockLoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) {
-      toast.error("Introdueix un correu electronic.");
+      toast.error("Introdueix un correu electrònic.");
       return;
     }
     setLoading(true);
@@ -101,7 +101,7 @@ export function DevMockLoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      toast.error("No s'ha pogut iniciar sessio. Torna-ho a provar.");
+      toast.error("No s'ha pogut iniciar sessió. Torna-ho a provar.");
       return;
     }
     router.push(callbackUrl);
@@ -111,11 +111,11 @@ export function DevMockLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="rounded-md border border-dashed border-amber-400/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-        No hi ha cap proveidor SSO configurat (Google/Microsoft). Aquest acces de
-        prova crea una sessio simulada per provar totes les pantalles.
+        No hi ha cap proveïdor SSO configurat (Google/Microsoft). Aquest accés de
+        prova crea una sessió simulada per provar totes les pantalles.
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="email">Correu electronic</Label>
+        <Label htmlFor="email">Correu electrònic</Label>
         <Input
           id="email"
           type="email"

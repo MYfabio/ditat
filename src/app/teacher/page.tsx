@@ -9,7 +9,7 @@ import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { ruleLabel } from "@/lib/dictation-rules";
 
-type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
+type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicació: string };
 type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
 
 async function loadTeacherData(teacherId: string) {
@@ -135,7 +135,7 @@ export default async function TeacherPage() {
           <TabsContent value="analitiques" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Errors ortografics mes frequents</CardTitle>
+                <CardTitle className="text-base">Errors ortogràfics més freqüents</CardTitle>
               </CardHeader>
               <CardContent>
                 {topErrors.length === 0 ? (
@@ -163,12 +163,12 @@ export default async function TeacherPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Puntuacio mitjana per dictat</CardTitle>
+                <CardTitle className="text-base">Puntuació mitjana per dictat</CardTitle>
               </CardHeader>
               <CardContent>
                 {progress.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Encara no hi ha puntuacions per mostrar l&apos;evolucio de la classe.
+                    Encara no hi ha puntuacions per mostrar l&apos;evolució de la classe.
                   </p>
                 ) : (
                   <div className="space-y-2.5">

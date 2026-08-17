@@ -17,9 +17,9 @@ import { toast } from "sonner";
 import { GRADE_LEVELS, ORTHOGRAPHIC_RULES } from "@/lib/dictation-rules";
 
 const NEE_OPTIONS = [
-  { value: "cap", label: "Cap adaptacio especifica" },
+  { value: "cap", label: "Cap adaptació específica" },
   { value: "tdah", label: "Ritme TDAH (frases curtes)" },
-  { value: "dislexia", label: "Suport dislexia (vocabulari senzill)" },
+  { value: "dislexia", label: "Suport dislèxia (vocabulari senzill)" },
 ];
 
 export function DictationGenerator({
@@ -87,7 +87,7 @@ export function DictationGenerator({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Regla ortografica">
+          <Field label="Regla ortogràfica">
             <Select value={targetRule} onValueChange={(v) => v && setTargetRule(v)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -101,7 +101,7 @@ export function DictationGenerator({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Adaptacio NEE">
+          <Field label="Adaptació NEE">
             <Select value={neeAdaptation} onValueChange={(v) => v && setNeeAdaptation(v)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -140,7 +140,7 @@ export function DictationGenerator({
               checked={withAudio}
               onChange={(e) => setWithAudio(e.target.checked)}
             />
-            Generar tambe audio (TTS)
+            Generar també àudio (TTS)
           </label>
           <Button onClick={handleGenerate} disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : <Wand2 className="size-4" />}

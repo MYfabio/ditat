@@ -3,7 +3,7 @@ import { hasVisionKey } from "@/lib/ai/clients";
 export type OcrResult = { text: string; mocked: boolean };
 
 const MOCK_TEXT =
-  "[OCR simulat] Configura GOOGLE_CLOUD_VISION_API_KEY per activar la lectura real de fotos manuscrites. Aquest es un text d'exemple que simula la transcripcio.";
+  "[OCR simulat] Configura GOOGLE_CLOUD_VISION_API_KEY per activar la lectura real de fotos manuscrites. Aquest és un text d'exemple que simula la transcripció.";
 
 export async function extractTextFromImage(imageDataUrl: string): Promise<OcrResult> {
   if (!hasVisionKey) {
@@ -36,7 +36,7 @@ export async function extractTextFromImage(imageDataUrl: string): Promise<OcrRes
     return { text: text.trim(), mocked: false };
   } catch {
     return {
-      text: "[OCR fallit] No s'ha pogut llegir la imatge. Torna-ho a provar amb una foto mes clara i ben il·luminada.",
+      text: "[OCR fallit] No s'ha pogut llegir la imatge. Torna-ho a provar amb una foto més clara i ben il·luminada.",
       mocked: true,
     };
   }

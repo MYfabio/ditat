@@ -22,14 +22,16 @@ import {
   PartyPopper,
   CheckCircle2,
   Sparkles,
+  Keyboard,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 type SubmissionResult = {
   score: number;
   feedback: string;
   ocrText: string | null;
-  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+  errors: { paraulaOriginal: string; paraulaEscrita: string; explicació: string }[];
 };
 
 function chunkSentences(text: string, size = 2) {
@@ -66,6 +68,8 @@ export function DictationPlayer({
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const [mode, setMode] = useState<"keyboard" | "photo">("keyboard");
+  const [typedText, setTypedText] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
@@ -111,18 +115,24 @@ export function DictationPlayer({
     setResult(null);
   }
 
-  async function handleUpload() {
-    if (!photoPreview) return;
+  async function handleSubmit() {
+    const isTyped = mode === "keyboard";
+    if (isTyped ? !typedText.trim() : !photoPreview) return;
+
     setUploading(true);
     try {
       const res = await fetch("/api/submissions/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dictationId, photoDataUrl: photoPreview }),
+        body: JSON.stringify(
+          isTyped
+            ? { dictationId, typedText }
+            : { dictationId, photoDataUrl: photoPreview }
+        ),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "No s'ha pogut corregir la foto.");
+        toast.error(data.error || "No s'ha pogut corregir el dictat.");
         return;
       }
       setResult({
@@ -134,7 +144,7 @@ export function DictationPlayer({
       toast.success("Dictat corregit!");
       router.refresh();
     } catch {
-      toast.error("Error de xarxa pujant la foto.");
+      toast.error("Error de xarxa enviant el dictat.");
     } finally {
       setUploading(false);
     }
@@ -204,55 +214,119 @@ export function DictationPlayer({
       {audioUrl && <audio ref={audioRef} src={audioUrl} className="hidden" />}
       {!audioUrl && (
         <p className="text-xs text-muted-foreground">
-          Sense audio generat (OPENAI_API_KEY no configurada): es fa servir la veu del
+          Sense àudio generat (OPENAI_API_KEY no configurada): es fa servir la veu del
           navegador.
         </p>
       )}
 
       <div className="border-t pt-4">
-        <p className="mb-2 text-sm font-medium">Puja una foto del dictat fet a ma</p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-            <Camera className="size-4" />
-            Fer foto / pujar imatge
-          </Button>
-          {photoPreview && !result && (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photoPreview}
-                alt="Previsualitzacio del dictat"
-                className="h-16 w-16 rounded-md border object-cover"
-              />
-              <Button type="button" onClick={handleUpload} disabled={uploading}>
-                {uploading && <Loader2 className="animate-spin" />}
-                Enviar per correccio
+        <p className="mb-3 text-sm font-medium">Com vols fer el dictat?</p>
+
+        {!result && (
+          <>
+            <div className="mb-3 inline-flex rounded-lg border p-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "keyboard" ? "default" : "ghost"}
+                onClick={() => setMode("keyboard")}
+              >
+                <Keyboard className="size-4" />
+                Escriure amb el teclat
               </Button>
-            </>
-          )}
-        </div>
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "photo" ? "default" : "ghost"}
+                onClick={() => setMode("photo")}
+              >
+                <Camera className="size-4" />
+                Fer una foto
+              </Button>
+            </div>
+
+            {mode === "keyboard" ? (
+              <div className="space-y-3">
+                <Textarea
+                  value={typedText}
+                  onChange={(e) => setTypedText(e.target.value)}
+                  placeholder="Escriu aquí el dictat mentre l'escoltes..."
+                  rows={5}
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  className="text-base leading-relaxed"
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={uploading || !typedText.trim()}
+                  >
+                    {uploading && <Loader2 className="animate-spin" />}
+                    Enviar per correcció
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    El corrector del navegador està desactivat perquè el dictat sigui teu.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="size-4" />
+                    Fer foto / pujar imatge
+                  </Button>
+                  {photoPreview && (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photoPreview}
+                        alt="Previsualització del dictat"
+                        className="h-16 w-16 rounded-md border object-cover"
+                      />
+                      <Button type="button" onClick={handleSubmit} disabled={uploading}>
+                        {uploading && <Loader2 className="animate-spin" />}
+                        Enviar per correcció
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {result && (
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
               <PartyPopper className="mt-0.5 size-4 shrink-0 text-primary" />
               <div>
-                <p className="font-medium">Puntuacio: {result.score}%</p>
+                <p className="font-medium">Puntuació: {result.score}%</p>
                 <p className="text-muted-foreground">{result.feedback}</p>
               </div>
             </div>
 
             <div className="rounded-md border p-4">
               <p className="mb-3 text-sm font-medium">Autocorregeix el teu dictat</p>
-              <div className="grid gap-4 sm:grid-cols-[auto_1fr_1fr]">
+              <div
+                className={`grid gap-4 ${
+                  photoPreview ? "sm:grid-cols-[auto_1fr_1fr]" : "sm:grid-cols-2"
+                }`}
+              >
                 {photoPreview && (
                   <div>
                     <p className="mb-1 text-xs text-muted-foreground">La teva foto</p>
@@ -286,7 +360,7 @@ export function DictationPlayer({
                       <TableRow>
                         <TableHead>Ho havies d&apos;escriure</TableHead>
                         <TableHead>Ho vas escriure</TableHead>
-                        <TableHead>Per que</TableHead>
+                        <TableHead>Per què</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -294,7 +368,7 @@ export function DictationPlayer({
                         <TableRow key={i}>
                           <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
                           <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                          <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
+                          <TableCell className="text-muted-foreground">{err.explicació}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
