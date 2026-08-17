@@ -1,8 +1,17 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Play,
   Pause,
@@ -11,8 +20,16 @@ import {
   Camera,
   Loader2,
   PartyPopper,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
+
+type SubmissionResult = {
+  score: number;
+  feedback: string;
+  ocrText: string | null;
+  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+};
 
 function chunkSentences(text: string, size = 2) {
   const sentences = text
@@ -39,6 +56,7 @@ export function DictationPlayer({
   rawText: string;
   audioUrl: string | null;
 }) {
+  const router = useRouter();
   const chunks = useMemo(() => chunkSentences(rawText), [rawText]);
   const [chunkIndex, setChunkIndex] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -47,7 +65,7 @@ export function DictationPlayer({
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<{ score: number; feedback: string } | null>(null);
+  const [result, setResult] = useState<SubmissionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function setPlaybackSpeed(rate: number) {
@@ -107,8 +125,11 @@ export function DictationPlayer({
       setResult({
         score: data.submission.score,
         feedback: data.submission.correctedData?.feedback ?? "",
+        ocrText: data.submission.ocrText,
+        errors: data.submission.correctedData?.errors ?? [],
       });
       toast.success("Dictat corregit!");
+      router.refresh();
     } catch {
       toast.error("Error de xarxa pujant la foto.");
     } finally {
@@ -192,7 +213,7 @@ export function DictationPlayer({
             <Camera className="size-4" />
             Fer foto / pujar imatge
           </Button>
-          {photoPreview && (
+          {photoPreview && !result && (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -209,11 +230,71 @@ export function DictationPlayer({
         </div>
 
         {result && (
-          <div className="mt-4 flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-            <PartyPopper className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div>
-              <p className="font-medium">Puntuacio: {result.score}%</p>
-              <p className="text-muted-foreground">{result.feedback}</p>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+              <PartyPopper className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div>
+                <p className="font-medium">Puntuacio: {result.score}%</p>
+                <p className="text-muted-foreground">{result.feedback}</p>
+              </div>
+            </div>
+
+            <div className="rounded-md border p-4">
+              <p className="mb-3 text-sm font-medium">Autocorregeix el teu dictat</p>
+              <div className="grid gap-4 sm:grid-cols-[auto_1fr_1fr]">
+                {photoPreview && (
+                  <div>
+                    <p className="mb-1 text-xs text-muted-foreground">La teva foto</p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoPreview}
+                      alt="Foto que has enviat"
+                      className="h-32 w-32 rounded-md border object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">Text original del dictat</p>
+                  <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">{rawText}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">El que has escrit</p>
+                  <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">
+                    {result.ocrText || "Sense text detectat."}
+                  </p>
+                </div>
+              </div>
+
+              {result.errors.length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    Paraules per revisar
+                  </p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ho havies d&apos;escriure</TableHead>
+                        <TableHead>Ho vas escriure</TableHead>
+                        <TableHead>Per que</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {result.errors.map((err, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
+                          <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
+                          <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="mt-4 flex items-center gap-2 text-sm text-primary">
+                  <CheckCircle2 className="size-4" />
+                  Cap error detectat, ho has escrit tot correctament!
+                </div>
+              )}
             </div>
           </div>
         )}
