@@ -32,7 +32,7 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <TriangleAlert className="size-4 text-amber-600" />
-              Observacions per revisar amb l&apos;equip d&apos;orientacio
+              Observacions per revisar amb l&apos;equip d&apos;orientació
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -43,7 +43,7 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
                 només descriu patrons observats als dictats. Només un professional
                 (psicopedagog/a o logopeda) pot valorar si hi ha una dificultat específica
                 d&apos;aprenentatge. Fes servir aquesta informació unicament com a punt de
-                partida per parlar amb l&apos;equip d&apos;orientacio del centre.
+                partida per parlar amb l&apos;equip d&apos;orientació del centre.
               </p>
             </div>
             {withObservations.map((p) => (

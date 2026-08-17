@@ -63,7 +63,7 @@ export async function evaluateSubmission(
     return mockEvaluate(originalText, ocrText);
   }
 
-  const prompt = `Ets un mestre de llengua catalana que corregeix dictats d'alumnat de primaria i secundaria.
+  const prompt = `Ets un mestre de llengua catalana que corregeix dictats d'alumnat de primària i secundària.
 Compara el TEXT ORIGINAL del dictat amb el TEXT ESCRIT per l'alumne (obtingut per OCR d'una foto manuscrita).
 Identifica els errors ortogràfics i dóna una puntuació de 0 a 100.
 

@@ -41,7 +41,7 @@ export default function PrivacitatPage() {
         <p>
           <strong className="text-foreground">Conservació:</strong> les dades
           es conserven mentre el centre mantingui el servei actiu, i s&apos;
-          eliminen a peticio del centre o en finalitzar la relacio contractual.
+          eliminen a petició del centre o en finalitzar la relació contractual.
         </p>
         <p>
           <strong className="text-foreground">Drets:</strong> les families i

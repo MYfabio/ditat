@@ -84,8 +84,8 @@ function isLetterOmission(original: string, written: string) {
 const MASTERY_SCORE = 85;
 const MIN_ATTEMPTS_FOR_MASTERY = 2;
 
-// Llindars deliberadament conservadors: cap observacio salta abans d'acumular
-// prou evidencia repetida, perquè un avis en fals te un cost pedagogic alt.
+// Llindars deliberadament conservadors: cap observació salta abans d'acumular
+// prou evidència repetida, perquè un avís en fals té un cost pedagògic alt.
 const MIN_SUBMISSIONS_FOR_OBSERVATIONS = 4;
 const MIN_REVERSALS = 5;
 const MIN_OMISSIONS = 6;

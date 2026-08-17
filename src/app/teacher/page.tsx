@@ -112,7 +112,7 @@ export default async function TeacherPage() {
     <>
       <DashboardHeader
         title="Panell del Docent"
-        subtitle="Genera dictats amb IA, consulta l'analitica de la classe i revisa les entregues."
+        subtitle="Genera dictats amb IA, consulta l'analítica de la classe i revisa les entregues."
         role="TEACHER"
         userName={session?.user?.name}
         userEmail={session?.user?.email}
@@ -123,7 +123,7 @@ export default async function TeacherPage() {
         <Tabs defaultValue="generador">
           <TabsList>
             <TabsTrigger value="generador">Generador de dictats</TabsTrigger>
-            <TabsTrigger value="analitiques">Analitiques de classe</TabsTrigger>
+            <TabsTrigger value="analitiques">Analítiques de classe</TabsTrigger>
             <TabsTrigger value="alumnat">Seguiment individual</TabsTrigger>
             <TabsTrigger value="entregues">Revisor d&apos;entregues</TabsTrigger>
           </TabsList>
