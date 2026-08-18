@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wand2, Loader2, Sparkles, Ruler } from "lucide-react";
 import { toast } from "sonner";
 import { GRADE_LEVELS, ORTHOGRAPHIC_RULES, lengthForGrade, countWords } from "@/lib/dictation-rules";
+import { SPEED_OPTIONS } from "@/lib/playback-settings";
 
 const NEE_OPTIONS = [
   { value: "cap", label: "Cap adaptació específica" },
@@ -33,6 +34,9 @@ export function DictationGenerator({
   const [neeAdaptation, setNeeAdaptation] = useState("cap");
   const [classGroupId, setClassGroupId] = useState<string>("none");
   const [withAudio, setWithAudio] = useState(false);
+  const [speed, setSpeed] = useState<number>(1);
+  const [repetitions, setRepetitions] = useState<string>("unlimited");
+  const [hiddenScreen, setHiddenScreen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<{ title: string; text: string; mocked: boolean } | null>(
     null
@@ -53,6 +57,11 @@ export function DictationGenerator({
           neeAdaptation,
           classGroupId: classGroupId === "none" ? undefined : classGroupId,
           withAudio,
+          playback: {
+            defaultSpeed: speed,
+            maxRepetitions: repetitions === "unlimited" ? null : Number(repetitions),
+            forceHiddenScreen: hiddenScreen,
+          },
         }),
       });
       const data = await res.json();
@@ -141,6 +150,58 @@ export function DictationGenerator({
             el dictat tindrà entre <strong className="text-foreground">{length.min} i {length.max} paraules</strong>.{" "}
             {length.guidance}
           </span>
+        </div>
+
+        <div className="space-y-3 rounded-md border p-3">
+          <p className="text-sm font-medium">Com ho escoltarà l&apos;alumnat</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Velocitat inicial">
+              <Select value={String(speed)} onValueChange={(v) => v && setSpeed(Number(v))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPEED_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={String(s)}>
+                      {s}x
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Repeticions per frase">
+              <Select value={repetitions} onValueChange={(v) => v && setRepetitions(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unlimited">Sense límit</SelectItem>
+                  {[1, 2, 3, 5].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={hiddenScreen}
+                  onChange={(e) => setHiddenScreen(e.target.checked)}
+                />
+                Pantalla oculta obligatòria
+              </label>
+            </div>
+          </div>
+          {hiddenScreen && (
+            <p className="text-xs text-muted-foreground">
+              L&apos;alumnat no podrà destapar el text mentre escriu: el dictat es farà només
+              d&apos;oïda.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

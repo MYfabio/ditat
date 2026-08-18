@@ -3,16 +3,26 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
 import { generateAudioDataUrl } from "@/lib/ai/generate-audio";
+import { parsePlaybackSettings } from "@/lib/playback-settings";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const { gradeLevel, targetRule, neeAdaptation, classGroupId, preview, withAudio } = body as {
+  const {
+    gradeLevel,
+    targetRule,
+    neeAdaptation,
+    classGroupId,
+    preview,
+    withAudio,
+    playback,
+  } = body as {
     gradeLevel?: string;
     targetRule?: string;
     neeAdaptation?: "cap" | "tdah" | "dislexia";
     classGroupId?: string;
     preview?: boolean;
     withAudio?: boolean;
+    playback?: unknown;
   };
 
   if (!gradeLevel || !targetRule) {
@@ -38,7 +48,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
   }
 
-  const audioUrl = withAudio ? await generateAudioDataUrl(text) : null;
+  const settings = parsePlaybackSettings(playback);
+
+  // Amb ritme lent la locució es demana més pausada al servei de veu; la
+  // velocitat fina l'ajusta després el reproductor del navegador.
+  const audio = withAudio
+    ? await generateAudioDataUrl(text, settings.defaultSpeed < 1 ? "slow" : "normal")
+    : { dataUrl: null, source: "browser" as const };
 
   try {
     const dictation = await prisma.dictation.create({
@@ -47,13 +63,20 @@ export async function POST(req: Request) {
         targetRule,
         gradeLevel,
         rawText: text,
-        audioUrl,
+        audioUrl: audio.dataUrl,
+        audioSource: withAudio ? audio.source : null,
+        playbackSettings: { ...settings },
         isAIGenerated: true,
         teacherId: session.user.id,
         classGroupId: classGroupId || null,
       },
     });
-    return NextResponse.json({ dictation, mocked, audioMocked: withAudio && !audioUrl });
+    return NextResponse.json({
+      dictation,
+      mocked,
+      audioSource: withAudio ? audio.source : null,
+      audioMocked: withAudio && !audio.dataUrl,
+    });
   } catch {
     return NextResponse.json(
       {

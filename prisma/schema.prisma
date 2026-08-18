@@ -168,7 +168,14 @@ model Dictation {
   gradeLevel     String
   rawText        String  @db.Text
   audioUrl       String?
+  // Quin servei ha locutat el dictat: "gemini", "openai" o "browser" (veu del
+  // navegador, quan cap servei estava disponible o autoritzat).
+  audioSource    String?
   isAIGenerated  Boolean @default(true)
+
+  // Com vol el docent que l'alumne escolti aquest dictat:
+  // { defaultSpeed: number, maxRepetitions: number|null, forceHiddenScreen: boolean }
+  playbackSettings Json?
 
   teacherId String
   teacher   User   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)

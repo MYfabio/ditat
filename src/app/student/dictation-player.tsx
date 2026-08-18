@@ -29,6 +29,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_PLAYBACK, SPEED_OPTIONS, type PlaybackSettings } from "@/lib/playback-settings";
 import { toast } from "sonner";
 
 type SubmissionResult = {
@@ -50,7 +51,7 @@ function chunkSentences(text: string, size = 2) {
   return chunks.length ? chunks : [text];
 }
 
-const SPEEDS = [0.75, 1, 1.25, 1.5];
+
 
 export function DictationPlayer({
   dictationId,
@@ -59,6 +60,7 @@ export function DictationPlayer({
   audioUrl,
   personalised = false,
   sentencesPerChunk = 2,
+  playback = DEFAULT_PLAYBACK,
 }: {
   dictationId: string;
   title: string;
@@ -67,6 +69,8 @@ export function DictationPlayer({
   personalised?: boolean;
   /** Amb ritme TDAH n'hi ha prou amb una frase per bloc. */
   sentencesPerChunk?: number;
+  /** Velocitat, repeticions i pantalla oculta que ha fixat el docent. */
+  playback?: PlaybackSettings;
 }) {
   const router = useRouter();
   const chunks = useMemo(
@@ -74,9 +78,16 @@ export function DictationPlayer({
     [rawText, sentencesPerChunk]
   );
   const [chunkIndex, setChunkIndex] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(playback.defaultSpeed);
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Repeticions consumides de la frase actual (només si el docent en posa límit).
+  const [plays, setPlays] = useState<Record<number, number>>({});
+  const usedPlays = plays[chunkIndex] ?? 0;
+  const repetitionsLeft =
+    playback.maxRepetitions === null ? null : Math.max(0, playback.maxRepetitions - usedPlays);
+  const outOfRepetitions = repetitionsLeft === 0;
 
   const [showText, setShowText] = useState(false);
   const [noCatalanVoice, setNoCatalanVoice] = useState(false);
@@ -93,6 +104,12 @@ export function DictationPlayer({
   }
 
   function handleListen() {
+    if (outOfRepetitions) {
+      toast.info("Ja has fet servir totes les repeticions d'aquesta frase.");
+      return;
+    }
+    setPlays((p) => ({ ...p, [chunkIndex]: (p[chunkIndex] ?? 0) + 1 }));
+
     if (audioUrl && audioRef.current) {
       audioRef.current.playbackRate = speed;
       audioRef.current.play();
@@ -184,6 +201,11 @@ export function DictationPlayer({
               Fet per a tu
             </Badge>
           )}
+          {repetitionsLeft !== null && !result && (
+            <Badge variant={outOfRepetitions ? "outline" : "secondary"}>
+              {repetitionsLeft} repeticions
+            </Badge>
+          )}
           <Badge variant="outline">
             Frase {chunkIndex + 1} / {chunks.length}
           </Badge>
@@ -199,6 +221,7 @@ export function DictationPlayer({
           <Headphones className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Escolta la frase i escriu-la. El text apareixerà quan hagis enviat el dictat.
+            {playback.forceHiddenScreen && " El teu/a docent ha demanat fer-lo només d'oïda."}
           </p>
         </div>
       )}
@@ -208,6 +231,7 @@ export function DictationPlayer({
           size="lg"
           className="w-full sm:w-auto"
           onClick={speaking ? handlePause : handleListen}
+          disabled={!speaking && outOfRepetitions}
           aria-label={speaking ? "Atura la lectura" : "Escolta la frase"}
         >
           {speaking ? <Pause className="size-5" /> : <Play className="size-5" />}
@@ -248,7 +272,7 @@ export function DictationPlayer({
           </div>
 
           <div className="flex items-center gap-1" role="group" aria-label="Velocitat de lectura">
-            {SPEEDS.map((s) => (
+            {SPEED_OPTIONS.map((s) => (
               <Button
                 key={s}
                 size="sm"
@@ -262,15 +286,17 @@ export function DictationPlayer({
             ))}
           </div>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowText((v) => !v)}
-            aria-pressed={showText}
-          >
-            {showText ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            {showText ? "Amaga el text" : "Veure el text (ajuda)"}
-          </Button>
+          {!playback.forceHiddenScreen && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowText((v) => !v)}
+              aria-pressed={showText}
+            >
+              {showText ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {showText ? "Amaga el text" : "Veure el text (ajuda)"}
+            </Button>
+          )}
         </div>
       </div>
 

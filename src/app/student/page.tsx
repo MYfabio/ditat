@@ -8,6 +8,7 @@ import { AccessibilityToggles } from "./accessibility-toggles";
 import { DictationPlayer } from "./dictation-player";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
+import { parsePlaybackSettings } from "@/lib/playback-settings";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
 import { ruleLabel } from "@/lib/dictation-rules";
 
@@ -142,6 +143,7 @@ export default async function StudentPage() {
                   audioUrl={d.audioUrl}
                   personalised={!!d.targetStudentId}
                   sentencesPerChunk={sentencesPerChunk(needs)}
+                  playback={parsePlaybackSettings(d.playbackSettings)}
                 />
               ))
             )}
