@@ -16,9 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
 import { createSchool, updateUserRole, deleteSchool } from "./actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
+import { FilterBar } from "@/components/dashboard/filter-bar";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -33,7 +35,26 @@ const PLAN_LABELS: Record<string, string> = {
   XARXA: "Pla Xarxa / Municipal",
 };
 
-async function loadAdminData() {
+async function loadAdminData(filters: { schoolId?: string; q?: string }) {
+  // Filtre per centre i cerca per nom o correu. Amb uns quants centres i
+  // desenes d'usuaris, una llista sencera deixa de ser utilitzable.
+  const schoolFilter =
+    filters.schoolId === "cap"
+      ? { schoolId: null }
+      : filters.schoolId
+        ? { schoolId: filters.schoolId }
+        : {};
+
+  const search = filters.q?.trim();
+  const searchFilter = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
   try {
     const [schools, users, userCount, dictationCount, submissionCount, recentDictations, recentSubmissions] =
       await Promise.all([
@@ -42,6 +63,7 @@ async function loadAdminData() {
           orderBy: { createdAt: "desc" },
         }),
         prisma.user.findMany({
+          where: { ...schoolFilter, ...searchFilter },
           select: { id: true, name: true, email: true, role: true, schoolId: true },
           orderBy: [{ role: "asc" }, { email: "asc" }],
         }),
@@ -91,9 +113,12 @@ async function loadAdminData() {
   }
 }
 
-export default async function AdminPage() {
+export default async function AdminPage(props: PageProps<"/admin">) {
   const session = await auth();
-  const data = await loadAdminData();
+  const params = await props.searchParams;
+  const schoolId = typeof params.centre === "string" ? params.centre : "";
+  const q = typeof params.q === "string" ? params.q : "";
+  const data = await loadAdminData({ schoolId, q });
 
   return (
     <>
@@ -107,7 +132,9 @@ export default async function AdminPage() {
       <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
-        <Tabs defaultValue="escoles">
+        {/* El filtre s'envia per GET i recarrega la pàgina: si no, es tornaria
+            sempre a la primera pestanya i es perdria el que s'estava mirant. */}
+        <Tabs defaultValue={schoolId || q ? "usuaris" : "escoles"}>
           <TabsList>
             <TabsTrigger value="escoles">Escoles</TabsTrigger>
             <TabsTrigger value="usuaris">Usuaris i rols</TabsTrigger>
@@ -126,6 +153,28 @@ export default async function AdminPage() {
                   se li dona el rol que li toca: la coordinació del centre i el professorat
                   s&apos;han d&apos;assignar en aquesta taula.
                 </p>
+
+                <FilterBar
+                  action="/admin"
+                  q={q}
+                  placeholder="Nom o correu…"
+                  resultCount={data.dbAvailable ? data.users.length : undefined}
+                  selects={[
+                    {
+                      name: "centre",
+                      label: "Centre",
+                      value: schoolId,
+                      options: [
+                        { value: "", label: "Tots els centres" },
+                        { value: "cap", label: "Sense centre assignat" },
+                        ...(data.dbAvailable
+                          ? data.schools.map((s) => ({ value: s.id, label: s.name }))
+                          : []),
+                      ],
+                    },
+                  ]}
+                />
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -254,14 +303,29 @@ export default async function AdminPage() {
                     {data.dbAvailable && data.schools.length > 0 ? (
                       data.schools.map((school) => (
                         <TableRow key={school.id}>
-                          <TableCell className="font-medium">{school.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <Link
+                              href={`/admin/centre/${school.id}`}
+                              className="underline underline-offset-2 hover:text-primary"
+                            >
+                              {school.name}
+                            </Link>
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{school.domain}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">{PLAN_LABELS[school.planType]}</Badge>
                           </TableCell>
                           <TableCell>{school._count.users}</TableCell>
                           <TableCell>{school._count.classGroups}</TableCell>
-                          <TableCell>
+                          <TableCell className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              nativeButton={false}
+                              render={<Link href={`/admin/centre/${school.id}`} />}
+                            >
+                              Veure
+                            </Button>
                             <form action={deleteSchool}>
                               <input type="hidden" name="schoolId" value={school.id} />
                               <ConfirmButton

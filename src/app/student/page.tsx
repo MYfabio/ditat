@@ -110,8 +110,9 @@ export default async function StudentPage() {
       <AssignedNeedsSync
         dyslexiaSupport={needs.dyslexiaSupport}
         highContrast={needs.highContrast}
+        updatedAt={needs.updatedAt}
       />
-      <main className="mx-auto max-w-4xl flex-1 space-y-6 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
         <Card>

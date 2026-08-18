@@ -8,13 +8,26 @@ import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { ClassRoster, type RosterStudent } from "./class-roster";
+import { FilterBar } from "@/components/dashboard/filter-bar";
 import { ruleLabel } from "@/lib/dictation-rules";
 import { parseNeedsProfile } from "@/lib/needs-profile";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
 
-async function loadTeacherData(teacherId: string) {
+async function loadTeacherData(teacherId: string, filters: { q?: string; grup?: string }) {
+  // Cerca per nom o correu de l'alumne i filtre per grup classe.
+  const search = filters.q?.trim();
+  const searchFilter = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+  const groupFilter = filters.grup ? { classGroupId: filters.grup } : {};
+
   try {
     const [classGroups, dictations, students] = await Promise.all([
       prisma.classGroup.findMany({ where: { teacherId }, orderBy: { name: "asc" } }),
@@ -24,7 +37,7 @@ async function loadTeacherData(teacherId: string) {
         orderBy: { createdAt: "desc" },
       }),
       prisma.user.findMany({
-        where: { role: "STUDENT", classGroup: { teacherId } },
+        where: { role: "STUDENT", classGroup: { teacherId }, ...searchFilter, ...groupFilter },
         orderBy: { name: "asc" },
         include: {
           improvementReports: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -38,9 +51,14 @@ async function loadTeacherData(teacherId: string) {
   }
 }
 
-export default async function TeacherPage() {
+export default async function TeacherPage(props: PageProps<"/teacher">) {
   const session = await auth();
-  const data = session?.user ? await loadTeacherData(session.user.id) : { dbAvailable: false as const };
+  const params = await props.searchParams;
+  const q = typeof params.q === "string" ? params.q : "";
+  const grup = typeof params.grup === "string" ? params.grup : "";
+  const data = session?.user
+    ? await loadTeacherData(session.user.id, { q, grup })
+    : { dbAvailable: false as const };
 
   const submissions: ReviewSubmission[] = data.dbAvailable
     ? data.dictations.flatMap((d) =>
@@ -133,7 +151,7 @@ export default async function TeacherPage() {
       <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
-        <Tabs defaultValue="generador">
+        <Tabs defaultValue={q || grup ? "classe" : "generador"}>
           <TabsList>
             <TabsTrigger value="generador">Generador de dictats</TabsTrigger>
             <TabsTrigger value="analitiques">Analítiques de classe</TabsTrigger>
@@ -143,6 +161,25 @@ export default async function TeacherPage() {
           </TabsList>
 
           <TabsContent value="classe" className="space-y-6">
+            <FilterBar
+              action="/teacher"
+              q={q}
+              placeholder="Nom o correu de l'alumne…"
+              resultCount={roster.length}
+              selects={[
+                {
+                  name: "grup",
+                  label: "Grup classe",
+                  value: grup,
+                  options: [
+                    { value: "", label: "Tots els grups" },
+                    ...(data.dbAvailable
+                      ? data.classGroups.map((c) => ({ value: c.id, label: c.name }))
+                      : []),
+                  ],
+                },
+              ]}
+            />
             <ClassRoster students={roster} />
           </TabsContent>
 

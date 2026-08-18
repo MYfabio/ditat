@@ -21,6 +21,7 @@ import { CsvImportForm } from "./csv-import-form";
 import { createClassGroup, assignStudentToClass, updateNeePresets, removeTeacherFromSchool } from "./actions";
 import { deleteClassGroup } from "../teacher/actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
+import { FilterBar } from "@/components/dashboard/filter-bar";
 import { GRADE_LEVELS } from "@/lib/dictation-rules";
 
 type NeePresets = {
@@ -29,12 +30,36 @@ type NeePresets = {
   tdahPacingDefault?: boolean;
 };
 
-async function loadSchoolData(schoolId: string) {
+async function loadSchoolData(schoolId: string, filters: { q?: string; rol?: string }) {
+  // Cerca per nom o correu i filtre per rol: amb un centre sencer importat,
+  // les llistes senceres deixen de ser utilitzables.
+  const search = filters.q?.trim();
+  const searchFilter = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+  const wantsTeachers = !filters.rol || filters.rol === "TEACHER";
+  const wantsStudents = !filters.rol || filters.rol === "STUDENT";
+
   try {
     const [school, teachers, students, classGroups] = await Promise.all([
       prisma.school.findUnique({ where: { id: schoolId } }),
-      prisma.user.findMany({ where: { schoolId, role: "TEACHER" }, orderBy: { name: "asc" } }),
-      prisma.user.findMany({ where: { schoolId, role: "STUDENT" }, orderBy: { name: "asc" } }),
+      wantsTeachers
+        ? prisma.user.findMany({
+            where: { schoolId, role: "TEACHER", ...searchFilter },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
+      wantsStudents
+        ? prisma.user.findMany({
+            where: { schoolId, role: "STUDENT", ...searchFilter },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
       prisma.classGroup.findMany({
         where: { schoolId },
         include: { teacher: true, _count: { select: { students: true } } },
@@ -47,10 +72,15 @@ async function loadSchoolData(schoolId: string) {
   }
 }
 
-export default async function SchoolPage() {
+export default async function SchoolPage(props: PageProps<"/school">) {
   const session = await auth();
+  const params = await props.searchParams;
+  const q = typeof params.q === "string" ? params.q : "";
+  const rol = typeof params.rol === "string" ? params.rol : "";
   const schoolId = session?.user?.schoolId;
-  const data = schoolId ? await loadSchoolData(schoolId) : { dbAvailable: false as const };
+  const data = schoolId
+    ? await loadSchoolData(schoolId, { q, rol })
+    : { dbAvailable: false as const };
   const neePresets = (data.dbAvailable ? data.school?.neePresets : null) as NeePresets | null;
 
   return (
@@ -88,6 +118,27 @@ export default async function SchoolPage() {
                   <CsvImportForm />
                 </CardContent>
               </Card>
+
+              <FilterBar
+                action="/school"
+                q={q}
+                placeholder="Nom o correu…"
+                resultCount={
+                  data.dbAvailable ? data.teachers.length + data.students.length : undefined
+                }
+                selects={[
+                  {
+                    name: "rol",
+                    label: "Rol",
+                    value: rol,
+                    options: [
+                      { value: "", label: "Tots els rols" },
+                      { value: "TEACHER", label: "Només docents" },
+                      { value: "STUDENT", label: "Només alumnat" },
+                    ],
+                  },
+                ]}
+              />
 
               <div className="mt-6 grid gap-6 md:grid-cols-2">
                 <UsersTable title="Docents" users={data.dbAvailable ? data.teachers : []} removable />

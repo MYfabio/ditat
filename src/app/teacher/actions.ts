@@ -108,6 +108,11 @@ export async function updateStudentNeeds(studentId: string, needs: NeedsProfile)
         highContrast: needs.highContrast,
         tdahPacing: needs.tdahPacing,
         ...(needs.notes ? { notes: needs.notes } : {}),
+        // Marca de temps del canvi. L'alumne pot ajustar-se les ajudes al seu
+        // dispositiu, però si el docent les torna a tocar més tard, mana el
+        // docent: si no, un alumne que hagués tocat els controls un sol cop no
+        // tornaria a rebre mai cap canvi.
+        updatedAt: new Date().toISOString(),
       },
     },
   });

@@ -15,44 +15,59 @@ export type Prefs = { dyslexicFont: boolean; highContrast: boolean };
 
 const DEFAULT_PREFS: Prefs = { dyslexicFont: false, highContrast: false };
 
+type Stored = Prefs & { setAt: number };
+
 const listeners = new Set<() => void>();
 
-// Adaptacions declarades pel docent per a aquest alumne. Són el punt de
-// partida; si l'alumne toca els controls, la seva tria (a localStorage) mana.
+// Adaptacions declarades pel docent i quan les va tocar per última vegada.
 let assignedPrefs: Prefs = DEFAULT_PREFS;
+let assignedAt = 0;
 
 let cachedRaw: string | null | undefined;
-let cachedPrefs: Prefs = DEFAULT_PREFS;
+let cachedStored: Stored | null = null;
 let cachedSnapshot: Prefs = DEFAULT_PREFS;
 
-function readStored(): Prefs | null {
+function readStored(): Stored | null {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (raw === null) return null;
   if (raw !== cachedRaw) {
     cachedRaw = raw;
     try {
-      const stored = JSON.parse(raw);
-      cachedPrefs = {
-        dyslexicFont: Boolean(stored.dyslexicFont),
-        highContrast: Boolean(stored.highContrast),
+      const s = JSON.parse(raw);
+      cachedStored = {
+        dyslexicFont: Boolean(s.dyslexicFont),
+        highContrast: Boolean(s.highContrast),
+        setAt: Number(s.setAt) || 0,
       };
     } catch {
-      cachedPrefs = DEFAULT_PREFS;
+      cachedStored = null;
     }
   }
-  return cachedPrefs;
+  return cachedStored;
 }
 
-/** L'estat efectiu: la tria de l'alumne si n'hi ha, si no el que ha dit el docent. */
+/**
+ * Mana la decisió més recent. L'alumne pot ajustar-se les ajudes al seu
+ * dispositiu, però si després el docent les torna a tocar, tornen a manar les
+ * del docent: si no, qui hagués tocat els controls un sol cop es quedaria
+ * aïllat de qualsevol canvi posterior, sense saber-ho.
+ */
+function effectivePrefs(): Prefs {
+  const stored = readStored();
+  if (!stored) return assignedPrefs;
+  if (assignedAt > stored.setAt) return assignedPrefs;
+  return { dyslexicFont: stored.dyslexicFont, highContrast: stored.highContrast };
+}
+
 function getSnapshot(): Prefs {
-  const effective = readStored() ?? assignedPrefs;
-  // useSyncExternalStore exigeix una referència estable mentre no hi hagi canvis.
+  const next = effectivePrefs();
+  // useSyncExternalStore exigeix una referència estable mentre res no canviï.
   if (
-    effective.dyslexicFont !== cachedSnapshot.dyslexicFont ||
-    effective.highContrast !== cachedSnapshot.highContrast
+    next.dyslexicFont !== cachedSnapshot.dyslexicFont ||
+    next.highContrast !== cachedSnapshot.highContrast
   ) {
-    cachedSnapshot = { ...effective };
+    cachedSnapshot = { ...next };
   }
   return cachedSnapshot;
 }
@@ -66,23 +81,32 @@ function notify() {
 }
 
 function writePrefs(next: Prefs) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  cachedRaw = undefined; // força rellegir
+  const stored: Stored = { ...next, setAt: Date.now() };
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  cachedRaw = undefined;
   notify();
 }
 
-/**
- * Publica les adaptacions que el docent ha assignat a aquest alumne. Es crida
- * des del servidor via `<AssignedNeedsSync>`, no des de la interfície.
- */
-export function setAssignedPrefs(next: Prefs) {
+/** Descarta la tria local i torna al que ha assignat el docent. */
+export function resetToAssigned() {
+  window.localStorage.removeItem(STORAGE_KEY);
+  cachedRaw = undefined;
+  cachedStored = null;
+  notify();
+}
+
+/** Publica les adaptacions declarades pel docent per a aquest alumne. */
+export function setAssignedPrefs(next: Prefs, updatedAt?: string) {
+  const at = updatedAt ? Date.parse(updatedAt) || 0 : 0;
   if (
     assignedPrefs.dyslexicFont === next.dyslexicFont &&
-    assignedPrefs.highContrast === next.highContrast
+    assignedPrefs.highContrast === next.highContrast &&
+    assignedAt === at
   ) {
     return;
   }
   assignedPrefs = next;
+  assignedAt = at;
   notify();
 }
 
@@ -98,12 +122,23 @@ function subscribe(callback: () => void) {
 type AccessibilityContextValue = Prefs & {
   toggleDyslexicFont: () => void;
   toggleHighContrast: () => void;
+  /** Cert quan l'alumne ha canviat les ajudes respecte del que va posar el docent. */
+  overridden: boolean;
+  resetToAssigned: () => void;
 };
 
 const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
 
 export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const prefs = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const overridden = useSyncExternalStore(
+    subscribe,
+    () => {
+      const stored = readStored();
+      return !!stored && stored.setAt >= assignedAt;
+    },
+    () => false
+  );
 
   useEffect(() => {
     document.documentElement.classList.toggle("font-dyslexic", prefs.dyslexicFont);
@@ -111,15 +146,19 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   }, [prefs.dyslexicFont, prefs.highContrast]);
 
   const toggleDyslexicFont = useCallback(() => {
-    writePrefs({ ...getSnapshot(), dyslexicFont: !getSnapshot().dyslexicFont });
+    const cur = getSnapshot();
+    writePrefs({ ...cur, dyslexicFont: !cur.dyslexicFont });
   }, []);
 
   const toggleHighContrast = useCallback(() => {
-    writePrefs({ ...getSnapshot(), highContrast: !getSnapshot().highContrast });
+    const cur = getSnapshot();
+    writePrefs({ ...cur, highContrast: !cur.highContrast });
   }, []);
 
   return (
-    <AccessibilityContext.Provider value={{ ...prefs, toggleDyslexicFont, toggleHighContrast }}>
+    <AccessibilityContext.Provider
+      value={{ ...prefs, toggleDyslexicFont, toggleHighContrast, overridden, resetToAssigned }}
+    >
       {children}
     </AccessibilityContext.Provider>
   );

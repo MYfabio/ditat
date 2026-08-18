@@ -2,14 +2,20 @@
 
 import { useAccessibilityPrefs } from "@/hooks/use-accessibility-prefs";
 import { Button } from "@/components/ui/button";
-import { BookOpenText, Contrast } from "lucide-react";
-import type { NeedsProfile } from "@/lib/needs-profile";
+import { BookOpenText, Contrast, RotateCcw } from "lucide-react";
+import { hasAnyAdaptation, type NeedsProfile } from "@/lib/needs-profile";
 
 export function AccessibilityToggles({ assigned }: { assigned: NeedsProfile }) {
-  const { dyslexicFont, highContrast, toggleDyslexicFont, toggleHighContrast } =
-    useAccessibilityPrefs();
+  const {
+    dyslexicFont,
+    highContrast,
+    toggleDyslexicFont,
+    toggleHighContrast,
+    overridden,
+    resetToAssigned,
+  } = useAccessibilityPrefs();
 
-  const assignedAny = assigned.dyslexiaSupport || assigned.highContrast || assigned.tdahPacing;
+  const teacherSetSomething = hasAnyAdaptation(assigned);
 
   return (
     <div className="space-y-3">
@@ -34,9 +40,16 @@ export function AccessibilityToggles({ assigned }: { assigned: NeedsProfile }) {
           <Contrast className="size-4" />
           Alt contrast
         </Button>
+
+        {overridden && teacherSetSomething && (
+          <Button type="button" variant="ghost" size="sm" onClick={resetToAssigned}>
+            <RotateCcw className="size-4" />
+            Tornar a les ajudes del meu docent
+          </Button>
+        )}
       </div>
 
-      {assignedAny && (
+      {teacherSetSomething && (
         <p className="text-xs text-muted-foreground">
           El teu/a docent t&apos;ha activat algunes ajudes
           {assigned.tdahPacing ? ", com llegir el dictat frase a frase" : ""}. Pots

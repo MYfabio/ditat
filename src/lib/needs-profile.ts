@@ -15,6 +15,8 @@ export type NeedsProfile = {
   tdahPacing: boolean;
   /** Nota del docent (context, indicacions de l'equip d'orientació...). */
   notes?: string;
+  /** Quan el docent va tocar aquestes adaptacions per última vegada. */
+  updatedAt?: string;
 };
 
 export const EMPTY_NEEDS_PROFILE: NeedsProfile = {
@@ -32,6 +34,7 @@ export function parseNeedsProfile(raw: unknown): NeedsProfile {
     highContrast: Boolean(p.highContrast),
     tdahPacing: Boolean(p.tdahPacing),
     notes: typeof p.notes === "string" && p.notes.trim() ? p.notes.trim() : undefined,
+    updatedAt: typeof p.updatedAt === "string" ? p.updatedAt : undefined,
   };
 }
 
