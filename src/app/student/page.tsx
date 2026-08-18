@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AccessibilityToggles } from "./accessibility-toggles";
 import { DictationPlayer } from "./dictation-player";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
+import { JoinClass } from "./join-class";
 import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
@@ -117,6 +119,28 @@ export default async function StudentPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">La meva classe</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {session?.user?.classGroupId ? (
+              <p className="text-sm text-muted-foreground">
+                Ja estàs apuntat/da a una classe. Si el teu/a docent te&apos;n dona un codi
+                nou, pots canviar-te aquí.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Encara no estàs a cap classe. Escriu el codi que t&apos;ha donat el teu/a
+                docent per començar a rebre dictats.
+              </p>
+            )}
+            <Suspense fallback={<div className="h-16" />}>
+              <JoinClass hasGroup={!!session?.user?.classGroupId} />
+            </Suspense>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Accessibilitat</CardTitle>
           </CardHeader>
           <CardContent>
@@ -131,8 +155,8 @@ export default async function StudentPage() {
           <CardContent className="space-y-4">
             {dictations.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Encara no tens cap dictat assignat. Demana al teu/a docent que t&apos;assigni a
-                un grup classe.
+                Encara no tens cap dictat. Si encara no ets a cap classe, apunta-t&apos;hi
+                amb el codi de més amunt.
               </p>
             ) : (
               dictations.map((d) => (

@@ -142,6 +142,10 @@ model ClassGroup {
   name       String
   gradeLevel String
 
+  // Codi curt que el docent comparteix amb la classe perquè l'alumnat s'hi
+  // apunti sol, en lloc d'haver-los d'assignar un per un.
+  joinCode   String? @unique
+
   schoolId String
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 

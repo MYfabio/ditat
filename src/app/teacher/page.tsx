@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createOwnClassGroup, addStudentToOwnGroup } from "./actions";
+import { JoinCodeCard, type GroupWithCode } from "./join-code-card";
 import { ruleLabel, GRADE_LEVELS } from "@/lib/dictation-rules";
 import { parseNeedsProfile } from "@/lib/needs-profile";
 
@@ -38,7 +39,11 @@ async function loadTeacherData(
 
   try {
     const [classGroups, dictations, students, schoolStudents] = await Promise.all([
-      prisma.classGroup.findMany({ where: { teacherId }, orderBy: { name: "asc" } }),
+      prisma.classGroup.findMany({
+        where: { teacherId },
+        include: { _count: { select: { students: true } } },
+        orderBy: { name: "asc" },
+      }),
       prisma.dictation.findMany({
         where: { teacherId },
         include: { submissions: { include: { student: true } } },
@@ -123,6 +128,16 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
     : [];
 
   const schoolStudents = data.dbAvailable ? data.schoolStudents : [];
+
+  const groupsWithCode: GroupWithCode[] = data.dbAvailable
+    ? data.classGroups.map((c) => ({
+        id: c.id,
+        name: c.name,
+        gradeLevel: c.gradeLevel,
+        joinCode: c.joinCode,
+        students: c._count.students,
+      }))
+    : [];
 
   const roster: RosterStudent[] = data.dbAvailable
     ? data.students.map((s) => ({
@@ -276,6 +291,8 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
                 )}
               </CardContent>
             </Card>
+
+            <JoinCodeCard groups={groupsWithCode} />
 
             <FilterBar
               action="/teacher"

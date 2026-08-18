@@ -4,6 +4,49 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { type NeedsProfile } from "@/lib/needs-profile";
+import { generateJoinCode } from "@/lib/join-code";
+
+/** Busca un codi que no estigui ja en ús. */
+async function freeJoinCode() {
+  for (let i = 0; i < 10; i++) {
+    const code = generateJoinCode();
+    const taken = await prisma.classGroup.findUnique({ where: { joinCode: code } });
+    if (!taken) return code;
+  }
+  // Amb 31^6 combinacions això no hauria de passar mai; si passa, s'allarga.
+  return generateJoinCode(8);
+}
+
+/**
+ * Torna a generar el codi d'un grup. Serveix quan un codi s'ha escampat més
+ * del compte i s'hi apunta qui no toca: el codi vell deixa de funcionar a
+ * l'instant, sense tocar qui ja hi és.
+ */
+export async function regenerateJoinCode(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autoritzat.");
+
+  const classGroupId = String(formData.get("classGroupId") || "");
+  if (!classGroupId) return;
+
+  const group = await prisma.classGroup.findUnique({
+    where: { id: classGroupId },
+    select: { teacherId: true, schoolId: true },
+  });
+  if (!group) return;
+
+  const allowed =
+    group.teacherId === session.user.id ||
+    session.user.role === "SUPERADMIN" ||
+    (session.user.role === "SCHOOL_COORD" && group.schoolId === session.user.schoolId);
+  if (!allowed) throw new Error("Aquest grup no és teu.");
+
+  await prisma.classGroup.update({
+    where: { id: classGroupId },
+    data: { joinCode: await freeJoinCode() },
+  });
+  revalidatePath("/teacher");
+}
 
 /**
  * Un docent crea el seu propi grup classe, del qual queda com a tutor.
@@ -26,7 +69,13 @@ export async function createOwnClassGroup(formData: FormData) {
   if (!name || !gradeLevel) return;
 
   await prisma.classGroup.create({
-    data: { name, gradeLevel, schoolId: session.user.schoolId, teacherId: session.user.id },
+    data: {
+      name,
+      gradeLevel,
+      schoolId: session.user.schoolId,
+      teacherId: session.user.id,
+      joinCode: await freeJoinCode(),
+    },
   });
 
   revalidatePath("/teacher");
