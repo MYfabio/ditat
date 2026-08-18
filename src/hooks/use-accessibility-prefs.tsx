@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -139,11 +140,18 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     },
     () => false
   );
+  const pathname = usePathname();
+
+  // Les adaptacions són per a l'espai de l'alumne. Aplicar-les a tot el web
+  // deixava la pàgina pública en blanc i negre per a qui hagués activat mai
+  // l'alt contrast, i des d'allà no hi ha cap control per desactivar-lo.
+  const appliesHere = pathname?.startsWith("/student") ?? false;
 
   useEffect(() => {
-    document.documentElement.classList.toggle("font-dyslexic", prefs.dyslexicFont);
-    document.documentElement.classList.toggle("contrast-high", prefs.highContrast);
-  }, [prefs.dyslexicFont, prefs.highContrast]);
+    const root = document.documentElement;
+    root.classList.toggle("font-dyslexic", appliesHere && prefs.dyslexicFont);
+    root.classList.toggle("contrast-high", appliesHere && prefs.highContrast);
+  }, [appliesHere, prefs.dyslexicFont, prefs.highContrast]);
 
   const toggleDyslexicFont = useCallback(() => {
     const cur = getSnapshot();
