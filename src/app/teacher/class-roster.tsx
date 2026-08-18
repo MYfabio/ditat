@@ -14,9 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpenText, Contrast, Timer, Loader2, Check } from "lucide-react";
+import { BookOpenText, Contrast, Timer, Loader2, Check, UserMinus } from "lucide-react";
 import { toast } from "sonner";
-import { updateStudentNeeds } from "./actions";
+import { updateStudentNeeds, removeStudentFromGroup, deleteStudent } from "./actions";
+import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { hasAnyAdaptation, type NeedsProfile } from "@/lib/needs-profile";
 
 export type RosterStudent = {
@@ -163,10 +164,33 @@ function StudentRow({ student }: { student: RosterStudent }) {
         />
       </TableCell>
       <TableCell>
-        <Button size="sm" onClick={save} disabled={!dirty || pending}>
-          {pending ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}
-          {saved ? "Desat" : "Desar"}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" onClick={save} disabled={!dirty || pending}>
+            {pending ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}
+            {saved ? "Desat" : "Desar"}
+          </Button>
+          <form action={removeStudentFromGroup}>
+            <input type="hidden" name="studentId" value={student.id} />
+            <Button
+              type="submit"
+              size="icon-sm"
+              variant="ghost"
+              title="Treure del grup"
+              aria-label={`Treure ${student.name} del grup`}
+            >
+              <UserMinus className="size-4" />
+            </Button>
+          </form>
+          <form action={deleteStudent}>
+            <input type="hidden" name="studentId" value={student.id} />
+            <ConfirmButton
+              size="icon-sm"
+              message={`Vols ELIMINAR ${student.name} del tot?\n\nS'esborraran també totes les seves entregues, les correccions i el seu perfil d'aprenentatge. No es pot desfer.\n\nSi només vol canviar de grup, fes servir "Treure del grup".`}
+            >
+              {""}
+            </ConfirmButton>
+          </form>
+        </div>
       </TableCell>
     </TableRow>
   );

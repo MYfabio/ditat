@@ -72,6 +72,36 @@ export async function importUsersCsv(csvText: string): Promise<CsvImportResult> 
   return result;
 }
 
+/**
+ * Treu un docent del centre: perd l'accés i deixa de tenir grups assignats,
+ * però ni ell ni els seus dictats ni les entregues de l'alumnat s'esborren.
+ * És el que cal quan algú pleaga o canvia de centre.
+ */
+export async function removeTeacherFromSchool(formData: FormData) {
+  const coordinator = await requireCoordinator();
+
+  const teacherId = String(formData.get("teacherId") || "");
+  if (!teacherId) return;
+
+  const teacher = await prisma.user.findUnique({
+    where: { id: teacherId },
+    select: { id: true, schoolId: true, role: true },
+  });
+  if (!teacher || teacher.schoolId !== coordinator.schoolId) return;
+
+  // Els seus grups es queden sense tutor, però no s'esborren.
+  await prisma.classGroup.updateMany({
+    where: { teacherId },
+    data: { teacherId: null },
+  });
+  await prisma.user.update({
+    where: { id: teacherId },
+    data: { schoolId: null, classGroupId: null },
+  });
+
+  revalidatePath("/school");
+}
+
 export async function createClassGroup(formData: FormData) {
   const user = await requireCoordinator();
 

@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
-import { createSchool, updateUserRole } from "./actions";
+import { createSchool, updateUserRole, deleteSchool } from "./actions";
+import { ConfirmButton } from "@/components/dashboard/confirm-button";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -246,6 +247,7 @@ export default async function AdminPage() {
                       <TableHead>Pla</TableHead>
                       <TableHead>Usuaris</TableHead>
                       <TableHead>Grups</TableHead>
+                      <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -259,11 +261,21 @@ export default async function AdminPage() {
                           </TableCell>
                           <TableCell>{school._count.users}</TableCell>
                           <TableCell>{school._count.classGroups}</TableCell>
+                          <TableCell>
+                            <form action={deleteSchool}>
+                              <input type="hidden" name="schoolId" value={school.id} />
+                              <ConfirmButton
+                                message={`Segur que vols eliminar "${school.name}"?\n\nS'esborraran els seus ${school._count.classGroups} grup(s) classe i tots els dictats i entregues que hi pengen.\n\nEls ${school._count.users} usuaris no s'esborren, però es quedaran sense centre.\n\nAquesta acció no es pot desfer.`}
+                              >
+                                Eliminar
+                              </ConfirmButton>
+                            </form>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           Encara no hi ha cap escola donada d&apos;alta.
                         </TableCell>
                       </TableRow>

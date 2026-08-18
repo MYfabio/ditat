@@ -43,6 +43,21 @@ export async function updateUserRole(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/**
+ * Esborra un centre. S'emporta els seus grups classe i, amb ells, els dictats
+ * i les entregues que hi pengen. Els usuaris no s'esborren: es queden sense
+ * centre assignat i deixen de veure'n res.
+ */
+export async function deleteSchool(formData: FormData) {
+  await requireSuperadmin();
+
+  const schoolId = String(formData.get("schoolId") || "");
+  if (!schoolId) return;
+
+  await prisma.school.delete({ where: { id: schoolId } });
+  revalidatePath("/admin");
+}
+
 export async function createSchool(formData: FormData) {
   await requireSuperadmin();
 

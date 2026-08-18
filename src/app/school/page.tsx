@@ -18,7 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CsvImportForm } from "./csv-import-form";
-import { createClassGroup, assignStudentToClass, updateNeePresets } from "./actions";
+import { createClassGroup, assignStudentToClass, updateNeePresets, removeTeacherFromSchool } from "./actions";
+import { deleteClassGroup } from "../teacher/actions";
+import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { GRADE_LEVELS } from "@/lib/dictation-rules";
 
 type NeePresets = {
@@ -88,7 +90,7 @@ export default async function SchoolPage() {
               </Card>
 
               <div className="mt-6 grid gap-6 md:grid-cols-2">
-                <UsersTable title="Docents" users={data.dbAvailable ? data.teachers : []} />
+                <UsersTable title="Docents" users={data.dbAvailable ? data.teachers : []} removable />
                 <UsersTable title="Alumnat" users={data.dbAvailable ? data.students : []} />
               </div>
             </TabsContent>
@@ -157,6 +159,7 @@ export default async function SchoolPage() {
                         <TableHead>Curs</TableHead>
                         <TableHead>Tutor/a</TableHead>
                         <TableHead>Alumnat</TableHead>
+                        <TableHead />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -169,11 +172,21 @@ export default async function SchoolPage() {
                               {cg.teacher?.name || cg.teacher?.email || "Sense assignar"}
                             </TableCell>
                             <TableCell>{cg._count.students}</TableCell>
+                            <TableCell>
+                              <form action={deleteClassGroup}>
+                                <input type="hidden" name="classGroupId" value={cg.id} />
+                                <ConfirmButton
+                                  message={`Vols eliminar el grup "${cg.name}"?\n\nEls ${cg._count.students} alumnes no s'esborren: es quedaran sense grup i deixaran de rebre els dictats d'aquesta classe.`}
+                                >
+                                  Eliminar
+                                </ConfirmButton>
+                              </form>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
                             Encara no hi ha grups classe.
                           </TableCell>
                         </TableRow>
@@ -281,9 +294,11 @@ export default async function SchoolPage() {
 function UsersTable({
   title,
   users,
+  removable = false,
 }: {
   title: string;
   users: { id: string; name: string | null; email: string }[];
+  removable?: boolean;
 }) {
   return (
     <Card>
@@ -297,9 +312,23 @@ function UsersTable({
         <ul className="space-y-1.5 text-sm">
           {users.length > 0 ? (
             users.map((u) => (
-              <li key={u.id} className="flex justify-between border-b py-1.5 last:border-0">
-                <span>{u.name || "-"}</span>
-                <span className="text-muted-foreground">{u.email}</span>
+              <li
+                key={u.id}
+                className="flex items-center justify-between gap-2 border-b py-1.5 last:border-0"
+              >
+                <span className="min-w-0 flex-1 truncate">{u.name || "-"}</span>
+                <span className="min-w-0 flex-1 truncate text-muted-foreground">{u.email}</span>
+                {removable && (
+                  <form action={removeTeacherFromSchool}>
+                    <input type="hidden" name="teacherId" value={u.id} />
+                    <ConfirmButton
+                      size="icon-sm"
+                      message={`Vols treure ${u.name || u.email} del centre?\n\nPerdrà l'accés i els seus grups es quedaran sense tutor/a, però ni els seus dictats ni les entregues de l'alumnat s'esborren.`}
+                    >
+                      {""}
+                    </ConfirmButton>
+                  </form>
+                )}
               </li>
             ))
           ) : (
