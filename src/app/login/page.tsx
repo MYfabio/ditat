@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
-import { SSOButtons, DevMockLoginForm } from "./login-form";
+import { SSOButtons, DevMockLoginForm, LoginError } from "./login-form";
 import { demoLoginEnabled } from "@/auth";
 
 export default function LoginPage() {
@@ -21,6 +21,9 @@ export default function LoginPage() {
         <p className="mb-6 text-sm text-muted-foreground">
           Accedeix amb el compte del teu centre educatiu.
         </p>
+        <Suspense fallback={<div className="h-40" />}>
+          <LoginError />
+        </Suspense>
         <Suspense fallback={<div className="h-40" />}>
           {hasSSO ? (
             <SSOButtons hasGoogle={hasGoogle} hasMicrosoft={hasMicrosoft} />

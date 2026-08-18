@@ -99,13 +99,84 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
+    /**
+     * Qui pot entrar amb SSO. Sense aquest filtre, qualsevol persona amb un
+     * compte de Google es podria donar d'alta en un sistema que conté dades
+     * de menors. Només s'hi accepta:
+     *   - correus del domini d'un centre registrat,
+     *   - usuaris que ja existeixen (importats per CSV o donats d'alta abans),
+     *   - dominis autoritzats explícitament (AUTH_ALLOWED_DOMAINS), pensat per
+     *     a l'equip que administra la plataforma.
+     */
+    async signIn({ user }) {
+      const email = user.email?.toLowerCase();
+      if (!email) return false;
+
+      const domain = email.split("@")[1];
+      const allowlist = (process.env.AUTH_ALLOWED_DOMAINS ?? "")
+        .split(",")
+        .map((d) => d.trim().toLowerCase())
+        .filter(Boolean);
+      if (domain && allowlist.includes(domain)) return true;
+
+      try {
+        const [school, existing] = await Promise.all([
+          matchSchoolByDomain(email),
+          prisma.user.findUnique({ where: { email }, select: { id: true } }),
+        ]);
+        if (school || existing) return true;
+        // Auth.js mostra aquest codi a /login?error=...
+        return "/login?error=CentreNoRegistrat";
+      } catch {
+        // Sense base de dades no es pot comprovar res: millor no deixar entrar.
+        return false;
+      }
+    },
+
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
+      if (user?.id) {
+        token.id = user.id;
         token.role = (user as { role?: Role }).role ?? "STUDENT";
         token.schoolId = (user as { schoolId?: string | null }).schoolId ?? null;
         token.classGroupId = (user as { classGroupId?: string | null }).classGroupId ?? null;
       }
+      if (!token.id) return token;
+
+      // El token que es construeix en iniciar sessió pot quedar desfasat: amb
+      // SSO, l'escola s'assigna just després de crear l'usuari, i el grup
+      // classe se sol assignar dies més tard. Mentre falti alguna d'aquestes
+      // dades es rellegeix el perfil real; un cop completes, no es torna a
+      // consultar la base de dades a cada petició.
+      const needsRefresh = !!user || !token.schoolId || !token.classGroupId;
+      if (!needsRefresh) return token;
+
+      try {
+        let profile = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { id: true, email: true, role: true, schoolId: true, classGroupId: true },
+        });
+        if (!profile) return token;
+
+        // També empara el cas que el centre es registri després que l'usuari
+        // hagi entrat per primer cop.
+        if (!profile.schoolId && profile.email) {
+          const school = await matchSchoolByDomain(profile.email);
+          if (school) {
+            profile = await prisma.user.update({
+              where: { id: profile.id },
+              data: { schoolId: school.id },
+              select: { id: true, email: true, role: true, schoolId: true, classGroupId: true },
+            });
+          }
+        }
+
+        token.role = profile.role;
+        token.schoolId = profile.schoolId;
+        token.classGroupId = profile.classGroupId;
+      } catch {
+        // Sense base de dades disponible es conserva el que ja tingui el token.
+      }
+
       return token;
     },
     async session({ session, token }) {

@@ -23,6 +23,32 @@ const ROLE_LABELS: Record<string, string> = {
   STUDENT: "Alumne/a",
 };
 
+const ERROR_MESSAGES: Record<string, string> = {
+  CentreNoRegistrat:
+    "Aquest correu no pertany a cap centre donat d'alta a DictatsIA. Comprova que fas servir el compte del teu centre educatiu, o demana a la direcció que registri el domini.",
+  AccessDenied: "No tens permís per accedir amb aquest compte.",
+  Configuration:
+    "Hi ha un problema de configuració de l'accés. Avisa la persona que administra la plataforma.",
+};
+
+export function LoginError() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  if (!error) return null;
+
+  const message =
+    ERROR_MESSAGES[error] ?? "No s'ha pogut iniciar la sessió. Torna-ho a provar.";
+
+  return (
+    <div
+      role="alert"
+      className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+    >
+      {message}
+    </div>
+  );
+}
+
 export function SSOButtons({
   hasGoogle,
   hasMicrosoft,
