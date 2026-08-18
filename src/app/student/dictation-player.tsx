@@ -23,6 +23,10 @@ import {
   CheckCircle2,
   Sparkles,
   Keyboard,
+  Headphones,
+  RotateCcw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -68,6 +72,8 @@ export function DictationPlayer({
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const [showText, setShowText] = useState(false);
+  const [noCatalanVoice, setNoCatalanVoice] = useState(false);
   const [mode, setMode] = useState<"keyboard" | "photo">("keyboard");
   const [typedText, setTypedText] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -94,6 +100,16 @@ export function DictationPlayer({
     const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
     utterance.lang = "ca-ES";
     utterance.rate = speed;
+
+    // Sense triar la veu explícitament, alguns navegadors llegeixen el català
+    // amb la veu per defecte del sistema. En un dictat això és greu: una
+    // pronúncia castellana o anglesa faria escriure malament l'alumne.
+    const catalanVoice = window.speechSynthesis
+      .getVoices()
+      .find((v) => v.lang.toLowerCase().startsWith("ca"));
+    if (catalanVoice) utterance.voice = catalanVoice;
+    setNoCatalanVoice(!catalanVoice);
+
     utterance.onstart = () => setSpeaking(true);
     utterance.onend = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
@@ -142,6 +158,7 @@ export function DictationPlayer({
         errors: data.submission.correctedData?.errors ?? [],
       });
       toast.success("Dictat corregit!");
+      setShowText(true);
       router.refresh();
     } catch {
       toast.error("Error de xarxa enviant el dictat.");
@@ -167,55 +184,100 @@ export function DictationPlayer({
         </div>
       </div>
 
-      <p className="rounded-md bg-muted/40 p-4 text-lg leading-relaxed">{chunks[chunkIndex]}</p>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon-sm"
-            variant="outline"
-            disabled={chunkIndex === 0}
-            onClick={() => setChunkIndex((i) => Math.max(0, i - 1))}
-          >
-            <ChevronLeft />
-          </Button>
-          {speaking ? (
-            <Button size="icon-sm" variant="outline" onClick={handlePause}>
-              <Pause />
-            </Button>
-          ) : (
-            <Button size="icon-sm" variant="outline" onClick={handleListen}>
-              <Play />
-            </Button>
-          )}
-          <Button
-            size="icon-sm"
-            variant="outline"
-            disabled={chunkIndex === chunks.length - 1}
-            onClick={() => setChunkIndex((i) => Math.min(chunks.length - 1, i + 1))}
-          >
-            <ChevronRight />
-          </Button>
+      {/* Un dictat s'escolta, no es llegeix: el text no es mostra si no es
+          demana explícitament com a ajuda. */}
+      {showText ? (
+        <p className="rounded-md bg-muted/40 p-4 text-lg leading-relaxed">{chunks[chunkIndex]}</p>
+      ) : (
+        <div className="flex flex-col items-center gap-3 rounded-md bg-muted/40 p-6 text-center">
+          <Headphones className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Escolta la frase i escriu-la. El text apareixerà quan hagis enviat el dictat.
+          </p>
         </div>
-        <div className="flex items-center gap-1">
-          {SPEEDS.map((s) => (
+      )}
+
+      <div className="flex flex-col items-center gap-3">
+        <Button
+          size="lg"
+          className="w-full sm:w-auto"
+          onClick={speaking ? handlePause : handleListen}
+          aria-label={speaking ? "Atura la lectura" : "Escolta la frase"}
+        >
+          {speaking ? <Pause className="size-5" /> : <Play className="size-5" />}
+          {speaking ? "Aturar" : "Escoltar"}
+        </Button>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center gap-1">
             <Button
-              key={s}
-              size="sm"
-              variant={speed === s ? "default" : "outline"}
-              onClick={() => setPlaybackSpeed(s)}
+              size="icon-sm"
+              variant="outline"
+              disabled={chunkIndex === 0}
+              onClick={() => setChunkIndex((i) => Math.max(0, i - 1))}
+              aria-label="Frase anterior"
+              title="Frase anterior"
             >
-              {s}x
+              <ChevronLeft />
             </Button>
-          ))}
+            <Button
+              size="icon-sm"
+              variant="outline"
+              onClick={handleListen}
+              aria-label="Repeteix la frase"
+              title="Repeteix la frase"
+            >
+              <RotateCcw />
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              disabled={chunkIndex === chunks.length - 1}
+              onClick={() => setChunkIndex((i) => Math.min(chunks.length - 1, i + 1))}
+              aria-label="Frase següent"
+              title="Frase següent"
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-1" role="group" aria-label="Velocitat de lectura">
+            {SPEEDS.map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={speed === s ? "default" : "outline"}
+                onClick={() => setPlaybackSpeed(s)}
+                aria-label={`Velocitat ${s}x`}
+                aria-pressed={speed === s}
+              >
+                {s}x
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowText((v) => !v)}
+            aria-pressed={showText}
+          >
+            {showText ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {showText ? "Amaga el text" : "Veure el text (ajuda)"}
+          </Button>
         </div>
       </div>
 
       {audioUrl && <audio ref={audioRef} src={audioUrl} className="hidden" />}
-      {!audioUrl && (
-        <p className="text-xs text-muted-foreground">
-          Sense àudio generat (OPENAI_API_KEY no configurada): es fa servir la veu del
-          navegador.
+      {!audioUrl && !noCatalanVoice && (
+        <p className="text-center text-xs text-muted-foreground">
+          Es fa servir la veu del navegador per llegir el dictat.
+        </p>
+      )}
+      {!audioUrl && noCatalanVoice && (
+        <p className="rounded-md border border-dashed border-amber-400/60 bg-amber-50 p-2 text-center text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          Aquest dispositiu no té cap veu catalana instal·lada, així que la pronúncia pot no
+          ser correcta. Comenta-ho al teu/a docent.
         </p>
       )}
 
