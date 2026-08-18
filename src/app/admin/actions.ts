@@ -12,13 +12,29 @@ async function requireSuperadmin() {
   }
 }
 
+/**
+ * El domini s'ha de desar net ("escola.cat"), perquè s'hi compara la part
+ * dreta del correu de qui inicia sessió. Si s'hi cola una arrova, una adreça
+ * completa o una URL, l'emparellament per domini no lliga mai i el centre es
+ * queda sense cap usuari, sense cap error visible.
+ */
+export function normaliseDomain(raw: string) {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "") // https://escola.cat
+    .replace(/^www\./, "")
+    .split("@")
+    .pop()! // @escola.cat  o  algu@escola.cat
+    .split("/")[0] // escola.cat/alguna-cosa
+    .trim();
+}
+
 export async function createSchool(formData: FormData) {
   await requireSuperadmin();
 
   const name = String(formData.get("name") || "").trim();
-  const domain = String(formData.get("domain") || "")
-    .trim()
-    .toLowerCase();
+  const domain = normaliseDomain(String(formData.get("domain") || ""));
   const planType = String(formData.get("planType") || "AULA") as PlanType;
 
   if (!name || !domain) return;

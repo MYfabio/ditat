@@ -115,6 +115,10 @@ export default async function AdminPage() {
                   <div className="grid gap-1.5">
                     <Label htmlFor="domain">Domini de correu</Label>
                     <Input id="domain" name="domain" placeholder="escola.cat" required />
+                    <p className="text-xs text-muted-foreground">
+                      Només el domini, sense arrova: el tros que va després de la @ dels
+                      correus del centre.
+                    </p>
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="planType">Pla</Label>
