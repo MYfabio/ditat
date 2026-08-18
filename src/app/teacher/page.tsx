@@ -7,7 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
+import { ClassRoster, type RosterStudent } from "./class-roster";
 import { ruleLabel } from "@/lib/dictation-rules";
+import { parseNeedsProfile } from "@/lib/needs-profile";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
@@ -26,6 +28,7 @@ async function loadTeacherData(teacherId: string) {
         orderBy: { name: "asc" },
         include: {
           improvementReports: { orderBy: { createdAt: "desc" }, take: 1 },
+          classGroup: { select: { name: true } },
         },
       }),
     ]);
@@ -86,6 +89,16 @@ export default async function TeacherPage() {
         .filter((p) => p.totalSubmissions > 0)
     : [];
 
+  const roster: RosterStudent[] = data.dbAvailable
+    ? data.students.map((s) => ({
+        id: s.id,
+        name: s.name || s.email,
+        email: s.email,
+        classGroupName: s.classGroup?.name ?? null,
+        needs: parseNeedsProfile(s.needsProfile),
+      }))
+    : [];
+
   const errorTally = new Map<string, number>();
   for (const s of submissions) {
     for (const err of s.errors) {
@@ -124,9 +137,14 @@ export default async function TeacherPage() {
           <TabsList>
             <TabsTrigger value="generador">Generador de dictats</TabsTrigger>
             <TabsTrigger value="analitiques">Analítiques de classe</TabsTrigger>
+            <TabsTrigger value="classe">La meva classe</TabsTrigger>
             <TabsTrigger value="alumnat">Seguiment individual</TabsTrigger>
             <TabsTrigger value="entregues">Revisor d&apos;entregues</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="classe" className="space-y-6">
+            <ClassRoster students={roster} />
+          </TabsContent>
 
           <TabsContent value="generador" className="space-y-6">
             <DictationGenerator classGroups={data.dbAvailable ? data.classGroups : []} />

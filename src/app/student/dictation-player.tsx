@@ -58,15 +58,21 @@ export function DictationPlayer({
   rawText,
   audioUrl,
   personalised = false,
+  sentencesPerChunk = 2,
 }: {
   dictationId: string;
   title: string;
   rawText: string;
   audioUrl: string | null;
   personalised?: boolean;
+  /** Amb ritme TDAH n'hi ha prou amb una frase per bloc. */
+  sentencesPerChunk?: number;
 }) {
   const router = useRouter();
-  const chunks = useMemo(() => chunkSentences(rawText), [rawText]);
+  const chunks = useMemo(
+    () => chunkSentences(rawText, sentencesPerChunk),
+    [rawText, sentencesPerChunk]
+  );
   const [chunkIndex, setChunkIndex] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [speaking, setSpeaking] = useState(false);

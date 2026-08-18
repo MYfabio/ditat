@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
+import { profileFromSchoolPresets } from "@/lib/needs-profile";
 
 async function requireCoordinator() {
   const session = await auth();
@@ -31,6 +32,11 @@ export async function importUsersCsv(csvText: string): Promise<CsvImportResult> 
 
   const result: CsvImportResult = { created: 0, skipped: 0, errors: [] };
 
+  // Els preajustos del centre només són el punt de partida d'un alumne nou:
+  // qui ajusta les adaptacions de cadascú és el seu docent.
+  const school = await prisma.school.findUnique({ where: { id: schoolId } });
+  const defaultNeeds = profileFromSchoolPresets(school?.neePresets);
+
   for (const [index, line] of lines.entries()) {
     const [emailRaw, nameRaw, roleRaw] = line.split(",").map((c) => c?.trim());
     if (index === 0 && emailRaw?.toLowerCase() === "email") continue; // capçalera opcional
@@ -51,7 +57,13 @@ export async function importUsersCsv(csvText: string): Promise<CsvImportResult> 
     await prisma.user.upsert({
       where: { email },
       update: { schoolId },
-      create: { email, name: nameRaw || email.split("@")[0], role, schoolId },
+      create: {
+        email,
+        name: nameRaw || email.split("@")[0],
+        role,
+        schoolId,
+        ...(role === "STUDENT" ? { needsProfile: { ...defaultNeeds } } : {}),
+      },
     });
     result.created++;
   }

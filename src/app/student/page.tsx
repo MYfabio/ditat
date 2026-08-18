@@ -6,12 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AccessibilityToggles } from "./accessibility-toggles";
 import { DictationPlayer } from "./dictation-player";
+import { AssignedNeedsSync } from "./assigned-needs-sync";
+import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
 import { ruleLabel } from "@/lib/dictation-rules";
 
 async function loadStudentData(studentId: string, classGroupId: string | null) {
   try {
-    const [dictations, submissions, latestReport] = await Promise.all([
+    const [me, dictations, submissions, latestReport] = await Promise.all([
+      prisma.user.findUnique({ where: { id: studentId }, select: { needsProfile: true } }),
       prisma.dictation.findMany({
         where: {
           OR: [
@@ -31,7 +34,13 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
         orderBy: { createdAt: "desc" },
       }),
     ]);
-    return { dbAvailable: true as const, dictations, submissions, latestReport };
+    return {
+      dbAvailable: true as const,
+      needs: parseNeedsProfile(me?.needsProfile),
+      dictations,
+      submissions,
+      latestReport,
+    };
   } catch {
     return { dbAvailable: false as const };
   }
@@ -72,6 +81,7 @@ export default async function StudentPage() {
 
   const dictations = data.dbAvailable ? data.dictations : [];
   const submissions = data.dbAvailable ? data.submissions : [];
+  const needs = data.dbAvailable ? data.needs : EMPTY_NEEDS_PROFILE;
   const metrics = (data.dbAvailable ? data.latestReport?.weaknessMetrics : null) as {
     perRule?: { rule: string; averageScore: number; mastered: boolean; attempts: number }[];
     curriculumProgress?: { expected: number; mastered: number };
@@ -96,6 +106,10 @@ export default async function StudentPage() {
         userName={session?.user?.name}
         userEmail={session?.user?.email}
       />
+      <AssignedNeedsSync
+        dyslexiaSupport={needs.dyslexiaSupport}
+        highContrast={needs.highContrast}
+      />
       <main className="mx-auto max-w-4xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
@@ -104,7 +118,7 @@ export default async function StudentPage() {
             <CardTitle className="text-base">Accessibilitat</CardTitle>
           </CardHeader>
           <CardContent>
-            <AccessibilityToggles />
+            <AccessibilityToggles assigned={needs} />
           </CardContent>
         </Card>
 
@@ -127,6 +141,7 @@ export default async function StudentPage() {
                   rawText={d.rawText}
                   audioUrl={d.audioUrl}
                   personalised={!!d.targetStudentId}
+                  sentencesPerChunk={sentencesPerChunk(needs)}
                 />
               ))
             )}

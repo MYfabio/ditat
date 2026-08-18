@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { buildLearningProfile, type LearningProfile } from "@/lib/learning-profile";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
 import { ruleLabel } from "@/lib/dictation-rules";
+import {
+  parseNeedsProfile,
+  generationAdaptation,
+  type NeedsProfile,
+} from "@/lib/needs-profile";
 
 /**
  * Recalcula el perfil d'aprenentatge d'un alumne a partir de tot el seu
@@ -39,7 +44,12 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
     },
   });
 
-  await preparePersonalisedDictation(student.id, gradeLevel, profile);
+  await preparePersonalisedDictation(
+    student.id,
+    gradeLevel,
+    profile,
+    parseNeedsProfile(student.needsProfile)
+  );
 
   return profile;
 }
@@ -47,7 +57,8 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
 async function preparePersonalisedDictation(
   studentId: string,
   gradeLevel: string,
-  profile: LearningProfile
+  profile: LearningProfile,
+  needs: NeedsProfile
 ) {
   if (!profile.weakestRule) return;
 
@@ -62,10 +73,12 @@ async function preparePersonalisedDictation(
     where: { taughtClassGroups: { some: { students: { some: { id: studentId } } } } },
   });
 
+  // L'adaptació surt del perfil que ha declarat el docent, no de les
+  // observacions automàtiques: detectar un patró no és diagnosticar res.
   const { text } = await generateDictationText({
     gradeLevel,
     targetRule: profile.weakestRule,
-    neeAdaptation: profile.observations.length ? "dislexia" : "cap",
+    neeAdaptation: generationAdaptation(needs),
   });
 
   const title = `Dictat personalitzat: ${ruleLabel(profile.weakestRule)}`;
