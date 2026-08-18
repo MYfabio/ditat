@@ -5,6 +5,67 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { type NeedsProfile } from "@/lib/needs-profile";
 
+/**
+ * Un docent crea el seu propi grup classe, del qual queda com a tutor.
+ * Abans això només es podia fer des de coordinació, i un docent que volgués
+ * començar a fer servir l'aplicació es quedava bloquejat esperant que algú
+ * altre li creés el grup.
+ */
+export async function createOwnClassGroup(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autoritzat.");
+  if (session.user.role !== "TEACHER" && session.user.role !== "SUPERADMIN") {
+    throw new Error("Només el professorat pot crear grups classe.");
+  }
+  if (!session.user.schoolId) {
+    throw new Error("Encara no tens cap centre assignat. Parla amb la coordinació.");
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  const gradeLevel = String(formData.get("gradeLevel") || "").trim();
+  if (!name || !gradeLevel) return;
+
+  await prisma.classGroup.create({
+    data: { name, gradeLevel, schoolId: session.user.schoolId, teacherId: session.user.id },
+  });
+
+  revalidatePath("/teacher");
+  revalidatePath("/school");
+}
+
+/** Afegeix al grup del docent un alumne que ja existeix al seu centre. */
+export async function addStudentToOwnGroup(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autoritzat.");
+
+  const studentId = String(formData.get("studentId") || "");
+  const classGroupId = String(formData.get("classGroupId") || "");
+  if (!studentId || !classGroupId) return;
+
+  const [group, student] = await Promise.all([
+    prisma.classGroup.findUnique({
+      where: { id: classGroupId },
+      select: { id: true, teacherId: true, schoolId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true, role: true, schoolId: true },
+    }),
+  ]);
+
+  if (!group || !student || student.role !== "STUDENT") return;
+  // El grup ha de ser seu i l'alumne, del mateix centre.
+  if (group.teacherId !== session.user.id && session.user.role !== "SUPERADMIN") {
+    throw new Error("Aquest grup no és teu.");
+  }
+  if (student.schoolId !== group.schoolId) {
+    throw new Error("Aquest alumne/a no és del teu centre.");
+  }
+
+  await prisma.user.update({ where: { id: studentId }, data: { classGroupId } });
+  revalidatePath("/teacher");
+}
+
 /** Comprova que qui fa l'acció té aquest alumne a classe. */
 async function requireOwnStudent(studentId: string) {
   const session = await auth();

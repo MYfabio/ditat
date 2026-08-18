@@ -9,13 +9,21 @@ import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { ClassRoster, type RosterStudent } from "./class-roster";
 import { FilterBar } from "@/components/dashboard/filter-bar";
-import { ruleLabel } from "@/lib/dictation-rules";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createOwnClassGroup, addStudentToOwnGroup } from "./actions";
+import { ruleLabel, GRADE_LEVELS } from "@/lib/dictation-rules";
 import { parseNeedsProfile } from "@/lib/needs-profile";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
 
-async function loadTeacherData(teacherId: string, filters: { q?: string; grup?: string }) {
+async function loadTeacherData(
+  teacherId: string,
+  schoolId: string | null,
+  filters: { q?: string; grup?: string }
+) {
   // Cerca per nom o correu de l'alumne i filtre per grup classe.
   const search = filters.q?.trim();
   const searchFilter = search
@@ -29,7 +37,7 @@ async function loadTeacherData(teacherId: string, filters: { q?: string; grup?: 
   const groupFilter = filters.grup ? { classGroupId: filters.grup } : {};
 
   try {
-    const [classGroups, dictations, students] = await Promise.all([
+    const [classGroups, dictations, students, schoolStudents] = await Promise.all([
       prisma.classGroup.findMany({ where: { teacherId }, orderBy: { name: "asc" } }),
       prisma.dictation.findMany({
         where: { teacherId },
@@ -44,8 +52,15 @@ async function loadTeacherData(teacherId: string, filters: { q?: string; grup?: 
           classGroup: { select: { name: true } },
         },
       }),
+      schoolId
+        ? prisma.user.findMany({
+            where: { role: "STUDENT", schoolId },
+            select: { id: true, name: true, email: true, classGroup: { select: { name: true } } },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
     ]);
-    return { dbAvailable: true as const, classGroups, dictations, students };
+    return { dbAvailable: true as const, classGroups, dictations, students, schoolStudents };
   } catch {
     return { dbAvailable: false as const };
   }
@@ -57,7 +72,7 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
   const q = typeof params.q === "string" ? params.q : "";
   const grup = typeof params.grup === "string" ? params.grup : "";
   const data = session?.user
-    ? await loadTeacherData(session.user.id, { q, grup })
+    ? await loadTeacherData(session.user.id, session.user.schoolId, { q, grup })
     : { dbAvailable: false as const };
 
   const submissions: ReviewSubmission[] = data.dbAvailable
@@ -106,6 +121,8 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
         })
         .filter((p) => p.totalSubmissions > 0)
     : [];
+
+  const schoolStudents = data.dbAvailable ? data.schoolStudents : [];
 
   const roster: RosterStudent[] = data.dbAvailable
     ? data.students.map((s) => ({
@@ -161,6 +178,105 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
           </TabsList>
 
           <TabsContent value="classe" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Crear un grup classe</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form
+                  action={createOwnClassGroup}
+                  className="grid gap-4 sm:grid-cols-[2fr_1fr_auto]"
+                >
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="name">Nom del grup</Label>
+                    <Input id="name" name="name" placeholder="4t A" required />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="gradeLevel">Curs</Label>
+                    <select
+                      id="gradeLevel"
+                      name="gradeLevel"
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                      required
+                    >
+                      {GRADE_LEVELS.map((g) => (
+                        <option key={g.value} value={g.value}>
+                          {g.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button type="submit" className="w-full">
+                      Crear
+                    </Button>
+                  </div>
+                </form>
+
+                {data.dbAvailable && data.classGroups.length > 0 && (
+                  <div className="border-t pt-4">
+                    <p className="mb-2 text-sm font-medium">Afegir un alumne/a al grup</p>
+                    <form
+                      action={addStudentToOwnGroup}
+                      className="grid gap-4 sm:grid-cols-[2fr_2fr_auto]"
+                    >
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="studentId">Alumne/a del centre</Label>
+                        <select
+                          id="studentId"
+                          name="studentId"
+                          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                          required
+                        >
+                          {schoolStudents.length === 0 ? (
+                            <option value="">Cap alumne/a disponible</option>
+                          ) : (
+                            schoolStudents.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name || s.email}
+                                {s.classGroup ? ` — ara a ${s.classGroup.name}` : ""}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="classGroupId">Al grup</Label>
+                        <select
+                          id="classGroupId"
+                          name="classGroupId"
+                          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                          required
+                        >
+                          {data.classGroups.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          className="w-full"
+                          disabled={schoolStudents.length === 0}
+                        >
+                          Afegir
+                        </Button>
+                      </div>
+                    </form>
+                    {schoolStudents.length === 0 && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Encara no hi ha cap alumne/a al centre. La coordinació els ha
+                        d&apos;importar primer.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <FilterBar
               action="/teacher"
               q={q}
