@@ -17,7 +17,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
-import { createSchool } from "./actions";
+import { createSchool, updateUserRole } from "./actions";
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPERADMIN: "Superadministrador",
+  SCHOOL_COORD: "Coordinació d'escola",
+  TEACHER: "Docent",
+  STUDENT: "Alumne/a",
+};
 
 const PLAN_LABELS: Record<string, string> = {
   AULA: "Pla Aula",
@@ -27,11 +34,15 @@ const PLAN_LABELS: Record<string, string> = {
 
 async function loadAdminData() {
   try {
-    const [schools, userCount, dictationCount, submissionCount, recentDictations, recentSubmissions] =
+    const [schools, users, userCount, dictationCount, submissionCount, recentDictations, recentSubmissions] =
       await Promise.all([
         prisma.school.findMany({
           include: { _count: { select: { users: true, classGroups: true } } },
           orderBy: { createdAt: "desc" },
+        }),
+        prisma.user.findMany({
+          select: { id: true, name: true, email: true, role: true, schoolId: true },
+          orderBy: [{ role: "asc" }, { email: "asc" }],
         }),
         prisma.user.count(),
         prisma.dictation.count(),
@@ -68,6 +79,7 @@ async function loadAdminData() {
     return {
       dbAvailable: true as const,
       schools,
+      users,
       userCount,
       dictationCount,
       submissionCount,
@@ -97,9 +109,88 @@ export default async function AdminPage() {
         <Tabs defaultValue="escoles">
           <TabsList>
             <TabsTrigger value="escoles">Escoles</TabsTrigger>
+            <TabsTrigger value="usuaris">Usuaris i rols</TabsTrigger>
             <TabsTrigger value="metriques">Mètriques</TabsTrigger>
             <TabsTrigger value="auditoria">Auditoria RGPD</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="usuaris">
+            <Card>
+              <CardHeader>
+                <CardTitle>Usuaris i rols</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Qui entra amb Google o Microsoft es crea sempre com a alumne/a. Des d&apos;aquí
+                  se li dona el rol que li toca: la coordinació del centre i el professorat
+                  s&apos;han d&apos;assignar en aquesta taula.
+                </p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Persona</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Centre</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.dbAvailable && data.users.length > 0 ? (
+                      data.users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{u.name || "—"}</span>
+                              <span className="text-xs text-muted-foreground">{u.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell colSpan={3} className="p-0">
+                            <form action={updateUserRole} className="flex flex-wrap items-center gap-2 p-2">
+                              <input type="hidden" name="userId" value={u.id} />
+                              <select
+                                name="role"
+                                defaultValue={u.role}
+                                aria-label={`Rol de ${u.name || u.email}`}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                              >
+                                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                                  <option key={value} value={value}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                name="schoolId"
+                                defaultValue={u.schoolId ?? "cap"}
+                                aria-label={`Centre de ${u.name || u.email}`}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                              >
+                                <option value="cap">Sense centre</option>
+                                {data.schools.map((s) => (
+                                  <option key={s.id} value={s.id}>
+                                    {s.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <Button type="submit" size="sm" variant="outline">
+                                Desar
+                              </Button>
+                            </form>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          Encara no hi ha cap usuari. Han d&apos;entrar un cop amb el seu compte.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="escoles" className="space-y-6">
             <Card>
