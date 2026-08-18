@@ -3,7 +3,7 @@ import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 export type EvaluationError = {
   paraulaOriginal: string;
   paraulaEscrita: string;
-  explicació: string;
+  explicacio: string;
 };
 
 export type EvaluationResult = {
@@ -34,13 +34,13 @@ function mockEvaluate(originalText: string, ocrText: string): EvaluationResult {
       errors.push({
         paraulaOriginal: o,
         paraulaEscrita: "(falta)",
-        explicació: "Sembla que falta aquesta paraula en el text escrit.",
+        explicacio: "Sembla que falta aquesta paraula en el text escrit.",
       });
     } else if (o.toLowerCase() !== w.toLowerCase()) {
       errors.push({
         paraulaOriginal: o,
         paraulaEscrita: w,
-        explicació: "Revisa l'ortografia d'aquesta paraula comparant-la amb el text original.",
+        explicacio: "Revisa l'ortografia d'aquesta paraula comparant-la amb el text original.",
       });
     }
   }
@@ -76,7 +76,7 @@ TEXT ESCRIT PER L'ALUMNE:
 Respon NOMÉS amb un JSON vàlid amb aquesta forma exacta, sense cap text addicional:
 {
   "score": number,
-  "errors": [{ "paraulaOriginal": string, "paraulaEscrita": string, "explicació": string }],
+  "errors": [{ "paraulaOriginal": string, "paraulaEscrita": string, "explicacio": string }],
   "feedback": string
 }
 El camp "feedback" ha de ser un missatge curt, positiu i pedagogic en català per a l'alumne.`;

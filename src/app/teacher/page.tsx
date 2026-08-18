@@ -9,7 +9,7 @@ import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { ruleLabel } from "@/lib/dictation-rules";
 
-type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicació: string };
+type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
 
 async function loadTeacherData(teacherId: string) {

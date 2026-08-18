@@ -1,6 +1,6 @@
 import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 import { getMockDictationText } from "@/lib/ai/mock-dictations";
-import { gradeLabel, ruleLabel } from "@/lib/dictation-rules";
+import { gradeLabel, ruleLabel, lengthForGrade, countWords } from "@/lib/dictation-rules";
 
 export type GenerateDictationInput = {
   gradeLevel: string;
@@ -32,22 +32,55 @@ export async function generateDictationText(
         ? "Evita paraules molt llargues o poc freqüents i utilitza estructures sintactiques simples, pensant en alumnat amb dislèxia."
         : "";
 
+  const length = lengthForGrade(gradeLevel);
+
   const prompt = `Ets un mestre expert en llengua catalana seguint el currículum del Departament d'Educació de Catalunya.
 Genera un text de dictat en català, adequat per a l'alumnat de ${gradeLabel(gradeLevel)}, que posi
-especial emfasi en la regla ortogràfica següent: "${ruleLabel(targetRule)}".
-El text ha de tenir entre 3 i 5 frases, un vocabulari natural i proper a l'alumnat, sense encapcalaments ni explicacions.
+especial èmfasi en la regla ortogràfica següent: "${ruleLabel(targetRule)}".
+
+LLARGADA OBLIGATÒRIA: entre ${length.min} i ${length.max} paraules (${length.cycle}, ${length.ages}).
+${length.guidance}
+Compta les paraules abans de respondre: un text fora d'aquest rang no serveix.
+
+Fes servir un vocabulari natural i proper a l'alumnat, sense encapçalaments ni explicacions.
 ${neeInstruction}
 Respon només amb el text del dictat, sense cometes ni comentaris addicionals.`;
 
-  try {
-    const message = await client.messages.create({
+  async function ask(messages: { role: "user" | "assistant"; content: string }[]) {
+    const message = await client!.messages.create({
       model: "claude-sonnet-5",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1000,
+      messages,
     });
     const block = message.content.find((b) => b.type === "text");
-    const text = block && "text" in block ? block.text.trim() : "";
+    return block && "text" in block ? block.text.trim() : "";
+  }
+
+  try {
+    let text = await ask([{ role: "user", content: prompt }]);
     if (!text) throw new Error("Resposta buida de Claude");
+
+    // Els models sovint es queden curts o es passen: si el text surt del rang,
+    // se li demana una correcció abans de donar-lo per bo.
+    const words = countWords(text);
+    if (words < length.min || words > length.max) {
+      const retry = await ask([
+        { role: "user", content: prompt },
+        { role: "assistant", content: text },
+        {
+          role: "user",
+          content: `Aquest text té ${words} paraules i el rang demanat és de ${length.min} a ${length.max}. Reescriu-lo ${
+            words > length.max ? "més curt" : "més llarg"
+          } respectant el rang, la mateixa regla ortogràfica i el mateix nivell. Respon només amb el text.`,
+        },
+      ]);
+      const retryWords = countWords(retry);
+      // Es queda amb el reintent només si realment s'acosta més al rang.
+      if (retry && Math.abs(retryWords - (length.min + length.max) / 2) < Math.abs(words - (length.min + length.max) / 2)) {
+        text = retry;
+      }
+    }
+
     return { text, title, mocked: false };
   } catch {
     return { text: getMockDictationText(targetRule, gradeLevel), title, mocked: true };

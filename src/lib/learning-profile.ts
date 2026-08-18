@@ -31,7 +31,7 @@ export type LearningProfile = {
   summaryText: string;
 };
 
-type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicació: string };
+type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 
 function readErrors(correctedData: unknown): EvaluationError[] {
   if (!correctedData || typeof correctedData !== "object") return [];

@@ -42,6 +42,53 @@ export function gradeIndex(value: string) {
   return GRADE_LEVELS.findIndex((g) => g.value === value);
 }
 
+// Llargada recomanada del dictat per etapa educativa (en paraules).
+export const TEXT_LENGTH_BY_CYCLE = [
+  {
+    cycle: "Cicle inicial",
+    ages: "6-7 anys",
+    grades: ["1-primaria", "2-primaria"],
+    min: 20,
+    max: 40,
+    guidance: "Frases simples i paraules molt habituals.",
+  },
+  {
+    cycle: "Cicle mitjà",
+    ages: "8-9 anys",
+    grades: ["3-primaria", "4-primaria"],
+    min: 40,
+    max: 70,
+    guidance: "Inclou regles ortogràfiques bàsiques ja treballades.",
+  },
+  {
+    cycle: "Cicle superior",
+    ages: "10-12 anys",
+    grades: ["5-primaria", "6-primaria"],
+    min: 70,
+    max: 120,
+    guidance: "Més complexitat i ús de signes de puntuació.",
+  },
+  {
+    cycle: "Secundària",
+    ages: "12-16 anys",
+    grades: ["1-eso", "2-eso", "3-eso", "4-eso"],
+    min: 120,
+    max: 150,
+    guidance: "Textos fluids amb ortografia avançada.",
+  },
+] as const;
+
+export function lengthForGrade(gradeLevel: string) {
+  return (
+    TEXT_LENGTH_BY_CYCLE.find((c) => (c.grades as readonly string[]).includes(gradeLevel)) ??
+    TEXT_LENGTH_BY_CYCLE[1]
+  );
+}
+
+export function countWords(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 /** Regles que el currículum ja espera dominar en un curs donat. */
 export function rulesExpectedAt(gradeLevel: string) {
   const current = gradeIndex(gradeLevel);

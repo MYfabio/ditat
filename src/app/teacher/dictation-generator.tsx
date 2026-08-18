@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Loader2, Sparkles } from "lucide-react";
+import { Wand2, Loader2, Sparkles, Ruler } from "lucide-react";
 import { toast } from "sonner";
-import { GRADE_LEVELS, ORTHOGRAPHIC_RULES } from "@/lib/dictation-rules";
+import { GRADE_LEVELS, ORTHOGRAPHIC_RULES, lengthForGrade, countWords } from "@/lib/dictation-rules";
 
 const NEE_OPTIONS = [
   { value: "cap", label: "Cap adaptació específica" },
@@ -37,6 +37,8 @@ export function DictationGenerator({
   const [preview, setPreview] = useState<{ title: string; text: string; mocked: boolean } | null>(
     null
   );
+
+  const length = lengthForGrade(gradeLevel);
 
   async function handleGenerate() {
     setLoading(true);
@@ -132,6 +134,15 @@ export function DictationGenerator({
           </Field>
         </div>
 
+        <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
+          <Ruler className="mt-0.5 size-4 shrink-0" />
+          <span>
+            <strong className="text-foreground">{length.cycle}</strong> ({length.ages}):{" "}
+            el dictat tindrà entre <strong className="text-foreground">{length.min} i {length.max} paraules</strong>.{" "}
+            {length.guidance}
+          </span>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input
@@ -155,7 +166,18 @@ export function DictationGenerator({
                 <Sparkles className="size-4 text-primary" />
                 {preview.title}
               </div>
-              {preview.mocked && <Badge variant="secondary">Text simulat (sense clau IA)</Badge>}
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const w = countWords(preview.text);
+                  const inRange = w >= length.min && w <= length.max;
+                  return (
+                    <Badge variant={inRange ? "secondary" : "outline"}>
+                      {w} paraules{inRange ? "" : ` (fora de ${length.min}-${length.max})`}
+                    </Badge>
+                  );
+                })()}
+                {preview.mocked && <Badge variant="secondary">Text simulat (sense clau IA)</Badge>}
+              </div>
             </div>
             <p className="text-sm leading-relaxed">{preview.text}</p>
           </div>

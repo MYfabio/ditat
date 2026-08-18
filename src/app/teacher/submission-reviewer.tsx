@@ -23,7 +23,7 @@ export type ReviewSubmission = {
   score: number | null;
   status: string;
   createdAt: string;
-  errors: { paraulaOriginal: string; paraulaEscrita: string; explicació: string }[];
+  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
   feedback: string | null;
 };
 
@@ -137,7 +137,7 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
                       <TableRow key={i}>
                         <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
                         <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                        <TableCell className="text-muted-foreground">{err.explicació}</TableCell>
+                        <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

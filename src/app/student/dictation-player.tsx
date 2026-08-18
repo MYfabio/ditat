@@ -31,7 +31,7 @@ type SubmissionResult = {
   score: number;
   feedback: string;
   ocrText: string | null;
-  errors: { paraulaOriginal: string; paraulaEscrita: string; explicació: string }[];
+  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
 };
 
 function chunkSentences(text: string, size = 2) {
@@ -368,7 +368,7 @@ export function DictationPlayer({
                         <TableRow key={i}>
                           <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
                           <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                          <TableCell className="text-muted-foreground">{err.explicació}</TableCell>
+                          <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
