@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { UserMenu } from "@/components/dashboard/user-menu";
+import { SignOutButton } from "@/components/dashboard/sign-out-button";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -33,7 +34,10 @@ export function DashboardHeader({
           </Link>
           <Badge variant="secondary">{ROLE_LABELS[role] ?? role}</Badge>
         </div>
-        <UserMenu name={userName} email={userEmail} />
+        <div className="flex items-center gap-2">
+          <UserMenu name={userName} email={userEmail} />
+          <SignOutButton />
+        </div>
       </div>
       <div className="mx-auto max-w-6xl px-4 pb-4 sm:px-6">
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
