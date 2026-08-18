@@ -18,7 +18,11 @@ export default auth((req) => {
 
   if (!req.auth) {
     const loginUrl = new URL("/login", nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
+    // Cal conservar la query, no només el camí: l'enllaç que el docent
+    // comparteix amb la classe porta el codi a ?codi=..., i qui hi arriba
+    // encara no ha iniciat sessió. Sense això, el codi es perdia pel camí i
+    // l'alumne acabava havent-lo d'escriure a mà.
+    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname + nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 

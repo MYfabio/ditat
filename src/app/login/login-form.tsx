@@ -27,8 +27,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   CentreNoRegistrat:
     "Aquest correu no pertany a cap centre donat d'alta a DictatsIA. Comprova que fas servir el compte del teu centre educatiu, o demana a la direcció que registri el domini.",
   AccessDenied: "No tens permís per accedir amb aquest compte.",
+  // Auth.js retorna "Configuration" també quan la comprovació de seguretat amb
+  // Google caduca (té 15 minuts) o quan es reintenta amb una pestanya antiga.
+  // És el cas més habitual, i té solució immediata.
   Configuration:
-    "Hi ha un problema de configuració de l'accés. Avisa la persona que administra la plataforma.",
+    "La comprovació amb Google ha caducat o s'ha reintentat des d'una pestanya antiga. Torna-ho a provar des d'aquí i completa'l sense deixar-lo a mitges. Si continua fallant, tanca totes les pestanyes de DictatsIA i comença de nou.",
+  OAuthAccountNotLinked:
+    "Aquest correu ja existeix a DictatsIA però amb un altre mètode d'accés. Avisa la persona que administra la plataforma.",
+  Verification: "L'enllaç d'accés ja no és vàlid. Torna a iniciar sessió.",
 };
 
 export function LoginError() {

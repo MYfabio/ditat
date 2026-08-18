@@ -38,6 +38,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   pages: {
     signIn: "/login",
+    // Sense això, qualsevol errada d'inici de sessió mostra la pantalla per
+    // defecte d'Auth.js: "Server error" en anglès i sense dir què cal fer.
+    error: "/login",
   },
   providers: [
     ...(hasGoogle
