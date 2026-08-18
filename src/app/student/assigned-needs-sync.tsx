@@ -11,16 +11,13 @@ import { setAssignedPrefs } from "@/hooks/use-accessibility-prefs";
 export function AssignedNeedsSync({
   dyslexiaSupport,
   highContrast,
-  updatedAt,
 }: {
   dyslexiaSupport: boolean;
   highContrast: boolean;
-  /** Quan el docent va tocar les adaptacions per última vegada. */
-  updatedAt?: string;
 }) {
   useEffect(() => {
-    setAssignedPrefs({ dyslexicFont: dyslexiaSupport, highContrast }, updatedAt);
-  }, [dyslexiaSupport, highContrast, updatedAt]);
+    setAssignedPrefs({ dyslexicFont: dyslexiaSupport, highContrast });
+  }, [dyslexiaSupport, highContrast]);
 
   return null;
 }

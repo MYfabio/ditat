@@ -32,7 +32,7 @@ export function DictationGenerator({
   const [gradeLevel, setGradeLevel] = useState(GRADE_LEVELS[3].value);
   const [targetRule, setTargetRule] = useState(ORTHOGRAPHIC_RULES[0].value);
   const [neeAdaptation, setNeeAdaptation] = useState("cap");
-  const [classGroupId, setClassGroupId] = useState<string>("none");
+  const [classGroupId, setClassGroupId] = useState<string>(classGroups[0]?.id ?? "none");
   const [withAudio, setWithAudio] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
   const [repetitions, setRepetitions] = useState<string>("unlimited");
@@ -132,7 +132,9 @@ export function DictationGenerator({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sense grup</SelectItem>
+                {classGroups.length === 0 && (
+                  <SelectItem value="none">Encara no tens cap grup</SelectItem>
+                )}
                 {classGroups.map((cg) => (
                   <SelectItem key={cg.id} value={cg.id}>
                     {cg.name}
@@ -214,11 +216,18 @@ export function DictationGenerator({
             />
             Generar també àudio (TTS)
           </label>
-          <Button onClick={handleGenerate} disabled={loading}>
+          <Button onClick={handleGenerate} disabled={loading || classGroupId === "none"}>
             {loading ? <Loader2 className="animate-spin" /> : <Wand2 className="size-4" />}
             Generar dictat
           </Button>
         </div>
+
+        {classGroupId === "none" && (
+          <p className="text-sm text-destructive">
+            Tria un grup classe: un dictat sense grup no el veuria cap alumne/a.
+            {classGroups.length === 0 && " Crea abans un grup a «La meva classe»."}
+          </p>
+        )}
 
         {preview && (
           <div className="rounded-lg border bg-muted/40 p-4">

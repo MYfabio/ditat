@@ -5,7 +5,6 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DbNotice } from "@/components/dashboard/db-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AccessibilityToggles } from "./accessibility-toggles";
 import { DictationPlayer } from "./dictation-player";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
@@ -112,41 +111,30 @@ export default async function StudentPage() {
       <AssignedNeedsSync
         dyslexiaSupport={needs.dyslexiaSupport}
         highContrast={needs.highContrast}
-        updatedAt={needs.updatedAt}
       />
       <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">La meva classe</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {session?.user?.classGroupId ? (
+        {/* El codi només surt mentre l'alumne no té classe: és l'única cosa
+            que ha de fer per començar. Un cop hi és, pertany al seu grup i la
+            pantalla és només per treballar. Les adaptacions les decideix el
+            docent i s'apliquen soles: no són una opció de l'alumne. */}
+        {!session?.user?.classGroupId && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Apunta&apos;t a la teva classe</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Ja estàs apuntat/da a una classe. Si el teu/a docent te&apos;n dona un codi
-                nou, pots canviar-te aquí.
+                Escriu el codi que t&apos;ha donat el teu/a docent per començar a rebre
+                dictats.
               </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Encara no estàs a cap classe. Escriu el codi que t&apos;ha donat el teu/a
-                docent per començar a rebre dictats.
-              </p>
-            )}
-            <Suspense fallback={<div className="h-16" />}>
-              <JoinClass hasGroup={!!session?.user?.classGroupId} />
-            </Suspense>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Accessibilitat</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AccessibilityToggles assigned={needs} />
-          </CardContent>
-        </Card>
+              <Suspense fallback={<div className="h-16" />}>
+                <JoinClass hasGroup={false} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
