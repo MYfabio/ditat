@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
+  Hourglass,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_PLAYBACK, SPEED_OPTIONS, type PlaybackSettings } from "@/lib/playback-settings";
@@ -89,6 +90,11 @@ export function DictationPlayer({
     playback.maxRepetitions === null ? null : Math.max(0, playback.maxRepetitions - usedPlays);
   const outOfRepetitions = repetitionsLeft === 0;
 
+  // Segons que falten perquè comenci a llegir. null = no hi ha compte enrere.
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const beepCtx = useRef<AudioContext | null>(null);
+
   const [showText, setShowText] = useState(false);
   const [noCatalanVoice, setNoCatalanVoice] = useState(false);
   const [mode, setMode] = useState<"keyboard" | "photo">("keyboard");
@@ -103,11 +109,80 @@ export function DictationPlayer({
     if (audioRef.current) audioRef.current.playbackRate = rate;
   }
 
+  /**
+   * Un pip curt a cada segon del compte enrere. El so importa: en el mode de
+   * paper l'alumne està mirant el full, no la pantalla, i no veuria els
+   * números. Si el navegador no deixa fer sons, el compte enrere continua
+   * igualment de manera visual.
+   */
+  function beep(frequency: number, seconds: number) {
+    try {
+      const Ctx =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return;
+      beepCtx.current ??= new Ctx();
+      const ctx = beepCtx.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + seconds);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + seconds);
+    } catch {
+      // Sense so: el compte enrere es veu a la pantalla igualment.
+    }
+  }
+
+  function stopCountdown() {
+    if (countdownTimer.current) {
+      clearInterval(countdownTimer.current);
+      countdownTimer.current = null;
+    }
+    setCountdown(null);
+  }
+
+  // Si el component desapareix enmig del compte enrere, el temporitzador no
+  // s'ha de quedar viu intentant fer parlar una frase que ja no hi és.
+  useEffect(() => stopCountdown, []);
+
   function handleListen() {
     if (outOfRepetitions) {
       toast.info("Ja has fet servir totes les repeticions d'aquesta frase.");
       return;
     }
+    if (countdown !== null) return;
+
+    // El compte enrere només abans del primer cop de cada frase: qui repeteix
+    // ja té el boli a la mà i el que vol és tornar-la a sentir de seguida.
+    const firstTime = (plays[chunkIndex] ?? 0) === 0;
+    if (firstTime && playback.countdownSeconds > 0) {
+      let left = playback.countdownSeconds;
+      setCountdown(left);
+      beep(660, 0.12);
+      countdownTimer.current = setInterval(() => {
+        left -= 1;
+        if (left > 0) {
+          setCountdown(left);
+          beep(660, 0.12);
+          return;
+        }
+        stopCountdown();
+        beep(990, 0.25);
+        speakNow();
+      }, 1000);
+      return;
+    }
+    speakNow();
+  }
+
+  function speakNow() {
+    // Les repeticions es compten quan la frase sona de debò: un compte enrere
+    // cancel·lat a mitges no li ha de gastar cap intent a l'alumne.
     setPlays((p) => ({ ...p, [chunkIndex]: (p[chunkIndex] ?? 0) + 1 }));
 
     if (audioUrl && audioRef.current) {
@@ -139,6 +214,7 @@ export function DictationPlayer({
   }
 
   function handlePause() {
+    stopCountdown();
     if (audioUrl && audioRef.current) {
       audioRef.current.pause();
     } else if (typeof window !== "undefined") {
@@ -214,13 +290,27 @@ export function DictationPlayer({
 
       {/* Un dictat s'escolta, no es llegeix: el text no es mostra si no es
           demana explícitament com a ajuda. */}
-      {showText ? (
+      {countdown !== null ? (
+        <div
+          className="flex flex-col items-center gap-2 rounded-md border-2 border-primary/40 bg-primary/5 p-6 text-center"
+          role="status"
+          aria-live="assertive"
+        >
+          <Hourglass className="size-6 text-primary" />
+          <span className="text-6xl font-bold tabular-nums text-primary">{countdown}</span>
+          <p className="text-sm font-medium">
+            Prepara&apos;t: agafa el boli o posa les mans al teclat.
+          </p>
+        </div>
+      ) : showText ? (
         <p className="rounded-md bg-muted/40 p-4 text-lg leading-relaxed">{chunks[chunkIndex]}</p>
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-md bg-muted/40 p-6 text-center">
           <Headphones className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Escolta la frase i escriu-la. El text apareixerà quan hagis enviat el dictat.
+            {playback.countdownSeconds > 0 &&
+              ` Tindràs ${playback.countdownSeconds} segons per preparar-te abans de començar.`}
             {playback.forceHiddenScreen && " El teu/a docent ha demanat fer-lo només d'oïda."}
           </p>
         </div>
@@ -230,12 +320,22 @@ export function DictationPlayer({
         <Button
           size="lg"
           className="w-full sm:w-auto"
-          onClick={speaking ? handlePause : handleListen}
-          disabled={!speaking && outOfRepetitions}
-          aria-label={speaking ? "Atura la lectura" : "Escolta la frase"}
+          onClick={speaking || countdown !== null ? handlePause : handleListen}
+          disabled={!speaking && countdown === null && outOfRepetitions}
+          aria-label={
+            countdown !== null
+              ? "Cancel·la el compte enrere"
+              : speaking
+                ? "Atura la lectura"
+                : "Escolta la frase"
+          }
         >
-          {speaking ? <Pause className="size-5" /> : <Play className="size-5" />}
-          {speaking ? "Aturar" : "Escoltar"}
+          {speaking || countdown !== null ? (
+            <Pause className="size-5" />
+          ) : (
+            <Play className="size-5" />
+          )}
+          {countdown !== null ? "Cancel·lar" : speaking ? "Aturar" : "Escoltar"}
         </Button>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -244,7 +344,10 @@ export function DictationPlayer({
               size="icon-sm"
               variant="outline"
               disabled={chunkIndex === 0}
-              onClick={() => setChunkIndex((i) => Math.max(0, i - 1))}
+              onClick={() => {
+                stopCountdown();
+                setChunkIndex((i) => Math.max(0, i - 1));
+              }}
               aria-label="Frase anterior"
               title="Frase anterior"
             >
@@ -263,7 +366,10 @@ export function DictationPlayer({
               size="icon-sm"
               variant="outline"
               disabled={chunkIndex === chunks.length - 1}
-              onClick={() => setChunkIndex((i) => Math.min(chunks.length - 1, i + 1))}
+              onClick={() => {
+                stopCountdown();
+                setChunkIndex((i) => Math.min(chunks.length - 1, i + 1));
+              }}
               aria-label="Frase següent"
               title="Frase següent"
             >

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wand2, Loader2, Sparkles, Ruler } from "lucide-react";
 import { toast } from "sonner";
 import { GRADE_LEVELS, ORTHOGRAPHIC_RULES, lengthForGrade, countWords } from "@/lib/dictation-rules";
-import { SPEED_OPTIONS } from "@/lib/playback-settings";
+import { SPEED_OPTIONS, COUNTDOWN_OPTIONS, DEFAULT_PLAYBACK } from "@/lib/playback-settings";
 
 const NEE_OPTIONS = [
   { value: "cap", label: "Cap adaptació específica" },
@@ -37,6 +37,7 @@ export function DictationGenerator({
   const [speed, setSpeed] = useState<number>(1);
   const [repetitions, setRepetitions] = useState<string>("unlimited");
   const [hiddenScreen, setHiddenScreen] = useState(false);
+  const [countdown, setCountdown] = useState<number>(DEFAULT_PLAYBACK.countdownSeconds);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<{ title: string; text: string; mocked: boolean } | null>(
     null
@@ -61,6 +62,7 @@ export function DictationGenerator({
             defaultSpeed: speed,
             maxRepetitions: repetitions === "unlimited" ? null : Number(repetitions),
             forceHiddenScreen: hiddenScreen,
+            countdownSeconds: countdown,
           },
         }),
       });
@@ -156,7 +158,7 @@ export function DictationGenerator({
 
         <div className="space-y-3 rounded-md border p-3">
           <p className="text-sm font-medium">Com ho escoltarà l&apos;alumnat</p>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Velocitat inicial">
               <Select value={String(speed)} onValueChange={(v) => v && setSpeed(Number(v))}>
                 <SelectTrigger className="w-full">
@@ -186,6 +188,20 @@ export function DictationGenerator({
                 </SelectContent>
               </Select>
             </Field>
+            <Field label="Compte enrere">
+              <Select value={String(countdown)} onValueChange={(v) => v && setCountdown(Number(v))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTDOWN_OPTIONS.map((c) => (
+                    <SelectItem key={c} value={String(c)}>
+                      {c === 0 ? "Sense espera" : `${c} segons`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
             <div className="flex items-end">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -198,6 +214,11 @@ export function DictationGenerator({
               </label>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {countdown === 0
+              ? "El dictat començarà a sonar de seguida que l'alumne premi Escoltar."
+              : `Abans de la primera lectura de cada frase, l'alumne tindrà ${countdown} segons amb un compte enrere i un senyal sonor per agafar el boli o posar les mans al teclat.`}
+          </p>
           {hiddenScreen && (
             <p className="text-xs text-muted-foreground">
               L&apos;alumnat no podrà destapar el text mentre escriu: el dictat es farà només
