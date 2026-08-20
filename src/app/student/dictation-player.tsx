@@ -97,6 +97,9 @@ export function DictationPlayer({
 
   const [showText, setShowText] = useState(false);
   const [noCatalanVoice, setNoCatalanVoice] = useState(false);
+  // La locució generada no ha arribat (encara no n'hi ha, o ha fallat el
+  // servei de veu): a partir d'aquí es llegeix amb la veu del navegador.
+  const [audioUnavailable, setAudioUnavailable] = useState(false);
   const [mode, setMode] = useState<"keyboard" | "photo">("keyboard");
   const [typedText, setTypedText] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -164,6 +167,9 @@ export function DictationPlayer({
       let left = playback.countdownSeconds;
       setCountdown(left);
       beep(660, 0.12);
+      // Aprofitem els segons d'espera per baixar la locució: quan el compte
+      // arriba a zero ja la tenim i el dictat comença sense pausa.
+      if (audioUrl && !audioUnavailable) audioRef.current?.load();
       countdownTimer.current = setInterval(() => {
         left -= 1;
         if (left > 0) {
@@ -185,11 +191,23 @@ export function DictationPlayer({
     // cancel·lat a mitges no li ha de gastar cap intent a l'alumne.
     setPlays((p) => ({ ...p, [chunkIndex]: (p[chunkIndex] ?? 0) + 1 }));
 
-    if (audioUrl && audioRef.current) {
-      audioRef.current.playbackRate = speed;
-      audioRef.current.play();
+    if (audioUrl && !audioUnavailable && audioRef.current) {
+      const el = audioRef.current;
+      el.playbackRate = speed;
+      setSpeaking(true);
+      el.play().catch(() => {
+        // El servidor no té locució per a aquest dictat (204) o no s'ha pogut
+        // baixar. No és cap error per a l'alumne: ho llegeix el navegador.
+        setAudioUnavailable(true);
+        setSpeaking(false);
+        speakWithBrowser();
+      });
       return;
     }
+    speakWithBrowser();
+  }
+
+  function speakWithBrowser() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       toast.error("El teu navegador no permet la lectura en veu alta.");
       return;
@@ -215,8 +233,9 @@ export function DictationPlayer({
 
   function handlePause() {
     stopCountdown();
-    if (audioUrl && audioRef.current) {
+    if (audioUrl && !audioUnavailable && audioRef.current) {
       audioRef.current.pause();
+      setSpeaking(false);
     } else if (typeof window !== "undefined") {
       window.speechSynthesis.cancel();
       setSpeaking(false);
@@ -406,13 +425,29 @@ export function DictationPlayer({
         </div>
       </div>
 
-      {audioUrl && <audio ref={audioRef} src={audioUrl} className="hidden" />}
-      {!audioUrl && !noCatalanVoice && (
+      {audioUrl && !audioUnavailable && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          // No es baixa fins que l'alumne vol escoltar: obrir la pàgina no ha
+          // de descarregar la veu de tots els dictats del curs.
+          preload="none"
+          className="hidden"
+          onPlay={() => setSpeaking(true)}
+          onEnded={() => setSpeaking(false)}
+          onPause={() => setSpeaking(false)}
+          onError={() => {
+            setAudioUnavailable(true);
+            setSpeaking(false);
+          }}
+        />
+      )}
+      {(!audioUrl || audioUnavailable) && !noCatalanVoice && (
         <p className="text-center text-xs text-muted-foreground">
           Es fa servir la veu del navegador per llegir el dictat.
         </p>
       )}
-      {!audioUrl && noCatalanVoice && (
+      {(!audioUrl || audioUnavailable) && noCatalanVoice && (
         <p className="rounded-md border border-dashed border-amber-400/60 bg-amber-50 p-2 text-center text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
           Aquest dispositiu no té cap veu catalana instal·lada, així que la pronúncia pot no
           ser correcta. Comenta-ho al teu/a docent.

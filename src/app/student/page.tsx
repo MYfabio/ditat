@@ -24,6 +24,17 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
             ...(classGroupId ? [{ classGroupId, targetStudentId: null }] : []),
           ],
         },
+        // Select explícit: així aquesta consulta no s'emportarà mai cap camp
+        // pesat que s'afegeixi al model més endavant. La locució es demana a
+        // part, i només quan l'alumne prem "Escoltar".
+        select: {
+          id: true,
+          title: true,
+          rawText: true,
+          wantsAudio: true,
+          targetStudentId: true,
+          playbackSettings: true,
+        },
         orderBy: { createdAt: "desc" },
       }),
       prisma.submission.findMany({
@@ -153,7 +164,7 @@ export default async function StudentPage() {
                   dictationId={d.id}
                   title={d.title}
                   rawText={d.rawText}
-                  audioUrl={d.audioUrl}
+                  audioUrl={d.wantsAudio ? `/api/dictations/${d.id}/audio` : null}
                   personalised={!!d.targetStudentId}
                   sentencesPerChunk={sentencesPerChunk(needs)}
                   playback={parsePlaybackSettings(d.playbackSettings)}

@@ -46,15 +46,15 @@ enum InputMethod {
 // ---------------------------------------------------------------------------
 
 model School {
-  id               String   @id @default(cuid())
-  name             String
-  domain           String   @unique
-  customSubdomain  String?  @unique
-  logo             String?
-  planType         PlanType @default(AULA)
-  neePresets       Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  domain          String   @unique
+  customSubdomain String?  @unique
+  logo            String?
+  planType        PlanType @default(AULA)
+  neePresets      Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   users       User[]
   classGroups ClassGroup[]
@@ -144,7 +144,7 @@ model ClassGroup {
 
   // Codi curt que el docent comparteix amb la classe perquè l'alumnat s'hi
   // apunti sol, en lloc d'haver-los d'assignar un per un.
-  joinCode   String? @unique
+  joinCode String? @unique
 
   schoolId String
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -166,16 +166,18 @@ model ClassGroup {
 // ---------------------------------------------------------------------------
 
 model Dictation {
-  id             String  @id @default(cuid())
-  title          String
-  targetRule     String
-  gradeLevel     String
-  rawText        String  @db.Text
-  audioUrl       String?
-  // Quin servei ha locutat el dictat: "gemini", "openai" o "browser" (veu del
-  // navegador, quan cap servei estava disponible o autoritzat).
-  audioSource    String?
-  isAIGenerated  Boolean @default(true)
+  id            String  @id @default(cuid())
+  title         String
+  targetRule    String
+  gradeLevel    String
+  rawText       String  @db.Text
+  // El docent ha demanat locucio generada per a aquest dictat. L'audio en si
+  // no viu aqui: veure DictationAudio.
+  wantsAudio    Boolean @default(false)
+  // Quin servei ha locutat el dictat l'ultim cop: "gemini", "openai" o
+  // "browser" (veu del navegador, quan cap servei estava disponible).
+  audioSource   String?
+  isAIGenerated Boolean @default(true)
 
   // Com vol el docent que l'alumne escolti aquest dictat:
   // { defaultSpeed: number, maxRepetitions: number|null, forceHiddenScreen: boolean }
@@ -193,6 +195,7 @@ model Dictation {
   targetStudent   User?   @relation("PersonalisedDictations", fields: [targetStudentId], references: [id], onDelete: Cascade)
 
   submissions Submission[]
+  audio       DictationAudio?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -202,10 +205,35 @@ model Dictation {
   @@index([targetStudentId])
 }
 
+/// Locucio generada d'un dictat.
+///
+/// Viu en una taula a part i no dins de Dictation a proposit: un minut i mig
+/// de veu son uns quants megues, i si estigues a la taula principal cada
+/// llistat de dictats se'ls emportaria tots a memoria per ensenyar nomes els
+/// titols. Aqui nomes es llegeix quan algu prem "Escoltar".
+///
+/// Es cache, no dada: sempre es pot tornar a generar a partir de rawText, aixi
+/// que es pot esborrar per alliberar espai (scripts/prune-dictation-audio.mjs).
+model DictationAudio {
+  dictationId String    @id
+  dictation   Dictation @relation(fields: [dictationId], references: [id], onDelete: Cascade)
+
+  // Binari, no base64: el base64 ocupa un 33% mes per a la mateixa veu.
+  data     Bytes
+  mimeType String
+  source   String
+
+  createdAt  DateTime @default(now())
+  // Ultim cop que algu la va escoltar, per saber que es pot esborrar.
+  lastUsedAt DateTime @default(now())
+
+  @@index([lastUsedAt])
+}
+
 model Submission {
-  id            String            @id @default(cuid())
-  dictationId   String
-  dictation     Dictation         @relation(fields: [dictationId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  dictationId String
+  dictation   Dictation @relation(fields: [dictationId], references: [id], onDelete: Cascade)
 
   studentId String
   student   User   @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
@@ -213,11 +241,11 @@ model Submission {
   photoUrl      String?
   // Text de l'alumne: transcrit per OCR si ve d'una foto, o escrit directament
   // amb el teclat. `inputMethod` diu d'on ve.
-  ocrText       String?           @db.Text
-  inputMethod   InputMethod       @default(PHOTO)
+  ocrText       String?          @db.Text
+  inputMethod   InputMethod      @default(PHOTO)
   correctedData Json?
   score         Float?
-  status        SubmissionStatus  @default(PENDING)
+  status        SubmissionStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -227,9 +255,9 @@ model Submission {
 }
 
 model ImprovementReport {
-  id              String @id @default(cuid())
-  studentId       String
-  student         User   @relation("StudentReports", fields: [studentId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  studentId String
+  student   User   @relation("StudentReports", fields: [studentId], references: [id], onDelete: Cascade)
 
   summaryText     String @db.Text
   weaknessMetrics Json

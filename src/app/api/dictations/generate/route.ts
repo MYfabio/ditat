@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
-import { generateAudioDataUrl } from "@/lib/ai/generate-audio";
+import { getOrCreateDictationAudio } from "@/lib/ai/dictation-audio";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
 
 export async function POST(req: Request) {
@@ -50,12 +50,6 @@ export async function POST(req: Request) {
 
   const settings = parsePlaybackSettings(playback);
 
-  // Amb ritme lent la locució es demana més pausada al servei de veu; la
-  // velocitat fina l'ajusta després el reproductor del navegador.
-  const audio = withAudio
-    ? await generateAudioDataUrl(text, settings.defaultSpeed < 1 ? "slow" : "normal")
-    : { dataUrl: null, source: "browser" as const };
-
   try {
     const dictation = await prisma.dictation.create({
       data: {
@@ -63,19 +57,22 @@ export async function POST(req: Request) {
         targetRule,
         gradeLevel,
         rawText: text,
-        audioUrl: audio.dataUrl,
-        audioSource: withAudio ? audio.source : null,
+        wantsAudio: !!withAudio,
         playbackSettings: { ...settings },
         isAIGenerated: true,
         teacherId: session.user.id,
         classGroupId: classGroupId || null,
       },
     });
+    // La locució es genera de seguida perquè esperi el docent i no l'alumnat,
+    // però es desa en una taula a part i no s'inclou a la resposta.
+    const audio = withAudio ? await getOrCreateDictationAudio(dictation.id) : null;
+
     return NextResponse.json({
       dictation,
       mocked,
-      audioSource: withAudio ? audio.source : null,
-      audioMocked: withAudio && !audio.dataUrl,
+      audioSource: audio?.source ?? (withAudio ? "browser" : null),
+      audioMocked: !!withAudio && !audio,
     });
   } catch {
     return NextResponse.json(
