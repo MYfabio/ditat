@@ -33,7 +33,9 @@ export function DictationGenerator({
   const [targetRule, setTargetRule] = useState(ORTHOGRAPHIC_RULES[0].value);
   const [neeAdaptation, setNeeAdaptation] = useState("cap");
   const [classGroupId, setClassGroupId] = useState<string>(classGroups[0]?.id ?? "none");
-  const [withAudio, setWithAudio] = useState(false);
+  // Marcada per defecte: la veu del navegador depèn de cada ordinador i sona
+  // artificial, mentre que l’àudio generat al servidor sona igual per a tothom.
+  const [withAudio, setWithAudio] = useState(true);
   const [speed, setSpeed] = useState<number>(1);
   const [repetitions, setRepetitions] = useState<string>("unlimited");
   const [hiddenScreen, setHiddenScreen] = useState(false);
