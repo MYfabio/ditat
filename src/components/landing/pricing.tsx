@@ -7,7 +7,7 @@ const PLANS = [
   {
     name: "Pla Aula",
     price: "Consulta'ns",
-    description: "Per a un sol docent que vol provar DictatsIA amb la seva classe.",
+    description: "Per a un sol docent que vol provar dictats.cat amb la seva classe.",
     features: [
       "1 docent i fins a 30 alumnes",
       "Generació de dictats amb IA",

@@ -17,7 +17,7 @@ export function Hero() {
             <span className="text-primary">IA</span> i correcció per foto
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            DictatsIA genera dictats personalitzats segons el currículum català,
+            dictats.cat genera dictats personalitzats segons el currículum català,
             corregeix fotos de dictats manuscrits amb intel·ligència artificial i
             adapta l&apos;experiència per a alumnat amb TDAH i dislèxia.
           </p>

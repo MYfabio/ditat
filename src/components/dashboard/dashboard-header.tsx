@@ -30,7 +30,7 @@ export function DashboardHeader({
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <GraduationCap className="size-6 text-primary" />
-            <span className="hidden sm:inline">DictatsIA</span>
+            <span className="hidden sm:inline">dictats.cat</span>
           </Link>
           <Badge variant="secondary">{ROLE_LABELS[role] ?? role}</Badge>
         </div>

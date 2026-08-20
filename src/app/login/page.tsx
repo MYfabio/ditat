@@ -14,7 +14,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-16">
       <Link href="/" className="mb-8 flex items-center gap-2 text-lg font-bold">
         <GraduationCap className="size-6 text-primary" />
-        DictatsIA
+        dictats.cat
       </Link>
       <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold">Benvingut/da</h1>

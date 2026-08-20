@@ -2,7 +2,7 @@ import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 
 export const metadata = {
-  title: "Política de privadesa | DictatsIA",
+  title: "Política de privadesa | dictats.cat",
 };
 
 export default function PrivacitatPage() {
@@ -10,11 +10,11 @@ export default function PrivacitatPage() {
     <main className="mx-auto flex max-w-3xl flex-1 flex-col gap-6 px-4 py-16 sm:px-6">
       <Link href="/" className="flex items-center gap-2 font-bold">
         <GraduationCap className="size-6 text-primary" />
-        DictatsIA
+        dictats.cat
       </Link>
       <h1 className="text-3xl font-bold tracking-tight">Política de privadesa</h1>
       <p className="text-muted-foreground">
-        DictatsIA es una plataforma educativa dissenyada perquè els centres
+        dictats.cat es una plataforma educativa dissenyada perquè els centres
         escolars mantinguin el control de les dades del seu alumnat, conforme al
         Reglament General de Protecció de Dades (RGPD) i a la normativa educativa
         catalana.
@@ -34,8 +34,8 @@ export default function PrivacitatPage() {
         </p>
         <p>
           <strong className="text-foreground">Responsable:</strong> el centre
-          educatiu que contracta DictatsIA es el responsable del tractament de
-          les dades del seu alumnat. DictatsIA actua com a encarregat del
+          educatiu que contracta dictats.cat es el responsable del tractament de
+          les dades del seu alumnat. dictats.cat actua com a encarregat del
           tractament, sota les instruccions del centre.
         </p>
         <p>

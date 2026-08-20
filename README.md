@@ -1,4 +1,4 @@
-# DictatsIA
+# dictats.cat
 
 Plataforma SaaS multi-tenant per a escoles catalanes: generacio de dictats amb IA,
 correccio per foto (OCR + IA) i suport per a NEE (TDAH, dislexia).

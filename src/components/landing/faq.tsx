@@ -9,7 +9,7 @@ const FAQS = [
   {
     question: "Les dades de l'alumnat estan protegides segons el RGPD?",
     answer:
-      "Sí. DictatsIA es dissenya seguint els principis del RGPD educatiu: minimització de dades, control per part del centre i cap ús de dades de l'alumnat per entrenar models d'IA de tercers.",
+      "Sí. dictats.cat es dissenya seguint els principis del RGPD educatiu: minimització de dades, control per part del centre i cap ús de dades de l'alumnat per entrenar models d'IA de tercers.",
   },
   {
     question: "Com funciona la correcció per foto?",

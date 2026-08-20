@@ -30,7 +30,7 @@ export function JoinCodeCard({ groups }: { groups: GroupWithCode[] }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Dona aquest codi a la teva classe: l&apos;alumnat entra a DictatsIA amb el compte del
+          Dona aquest codi a la teva classe: l&apos;alumnat entra a dictats.cat amb el compte del
           centre i s&apos;hi apunta sol. Només funciona per a alumnat del teu centre.
         </p>
         {groups.map((g) => (

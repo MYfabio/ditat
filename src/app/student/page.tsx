@@ -152,7 +152,7 @@ export default async function StudentPage() {
 
               <div className="space-y-3 border-t pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Si el teu centre fa servir DictatsIA, escriu el codi que t&apos;ha donat
+                  Si el teu centre fa servir dictats.cat, escriu el codi que t&apos;ha donat
                   el teu/a docent i passaràs a rebre els dictats de la classe.
                 </p>
                 <Suspense fallback={<div className="h-16" />}>

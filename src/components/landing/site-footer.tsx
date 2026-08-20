@@ -7,10 +7,10 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <GraduationCap className="size-5 text-primary" />
-          DictatsIA
+          dictats.cat
         </Link>
         <p className="text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} DictatsIA. Fet a Catalunya per a escoles catalanes.
+          © {new Date().getFullYear()} dictats.cat. Fet a Catalunya per a escoles catalanes.
         </p>
         <div className="flex gap-4 text-sm text-muted-foreground">
           <Link href="/privacitat" className="hover:text-foreground">

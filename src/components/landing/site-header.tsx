@@ -15,7 +15,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-bold">
           <GraduationCap className="size-6 text-primary" />
-          DictatsIA
+          dictats.cat
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           {NAV_LINKS.map((link) => (

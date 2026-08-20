@@ -39,7 +39,7 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
             <div className="flex items-start gap-2 rounded-md border border-amber-400/40 bg-background/60 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" />
               <p>
-                Això <strong className="text-foreground">no es cap diagnòstic</strong>. DictatsIA
+                Això <strong className="text-foreground">no es cap diagnòstic</strong>. dictats.cat
                 només descriu patrons observats als dictats. Només un professional
                 (psicopedagog/a o logopeda) pot valorar si hi ha una dificultat específica
                 d&apos;aprenentatge. Fes servir aquesta informació unicament com a punt de

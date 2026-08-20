@@ -45,7 +45,7 @@ export function ProblemSolution() {
           </Card>
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
-              <CardTitle className="text-base text-primary">Amb DictatsIA</CardTitle>
+              <CardTitle className="text-base text-primary">Amb dictats.cat</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {SOLUTIONS.map((item) => (
