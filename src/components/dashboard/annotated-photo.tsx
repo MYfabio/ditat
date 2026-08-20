@@ -117,6 +117,31 @@ function AnnotationMark({ mark }: { mark: Annotation }) {
     );
   }
 
+  if (mark.kind === "review") {
+    // Traç discontinu, que es llegeix com un dubte i no com una correcció.
+    return (
+      <g>
+        <line
+          x1={mark.x}
+          y1={baseline + mark.height * 0.08}
+          x2={mark.x + mark.width}
+          y2={baseline + mark.height * 0.08}
+          stroke={INK}
+          strokeWidth={stroke}
+          strokeDasharray={`${mark.height * 0.12} ${mark.height * 0.12}`}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <Label
+          text="?"
+          x={mark.x + mark.width / 2}
+          y={mark.y - mark.height * 0.15}
+          size={fontSize}
+        />
+      </g>
+    );
+  }
+
   if (mark.kind === "accent") {
     // Titlla dibuixada just damunt de la vocal que li toca.
     const centre = mark.x + mark.width / 2;

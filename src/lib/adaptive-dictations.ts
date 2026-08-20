@@ -108,41 +108,91 @@ type SubmissionForSkills = {
   dictation: { targetRule: string; targetSubskill: string | null };
 };
 
-/** Quants errors va comptar l'avaluacio en una entrega. */
-function errorCount(correctedData: unknown) {
-  if (!correctedData || typeof correctedData !== "object") return 0;
+type StoredError = {
+  skill?: string | null;
+  countForLearning?: boolean;
+};
+
+/** Errors desats d'una entrega, ja classificats per habilitat. */
+function readErrors(correctedData: unknown): StoredError[] {
+  if (!correctedData || typeof correctedData !== "object") return [];
   const errors = (correctedData as { errors?: unknown }).errors;
-  return Array.isArray(errors) ? errors.length : 0;
+  return Array.isArray(errors) ? (errors as StoredError[]) : [];
 }
 
 /**
- * Recalcula i desa l'estat de cada habilitat que l'alumne ha practicat.
+ * Errors que compten: els que l'OCR va llegir prou clars. Les entregues
+ * antigues no porten la marca i es donen per bones, que es com es van
+ * comptar quan es van corregir.
+ */
+function countedErrors(correctedData: unknown) {
+  return readErrors(correctedData).filter((e) => e.countForLearning !== false);
+}
+
+/** A partir de quants cops un error en una habilitat deixa de ser casualitat. */
+const RECURRENT_ERROR_THRESHOLD = 2;
+
+/**
+ * Recalcula i desa l'estat de cada habilitat de l'alumne.
  *
- * Un dictat compta per a la seva subhabilitat quan en te una declarada, i si
- * no, per a la regla sencera: mentre els errors no estiguin classificats un
- * per un, aquesta es tota la resolucio que tenim honestament.
+ * Hi ha dues fonts, i no es barregen:
+ *
+ * - El domini es mesura nomes en l'habilitat que el dictat treballava, perque
+ *   nomes alli sabem quantes oportunitats va tenir d'encertar. Inventar-se un
+ *   percentatge per a una habilitat que potser sortia dues vegades al text
+ *   seria posar-li un numero a una cosa que no s'ha mesurat.
+ * - Els errors recurrents en altres habilitats si que es desen: no diuen quant
+ *   en domina, pero si que hi ha alguna cosa per mirar, i el motor els te en
+ *   compte a l'hora de decidir que toca.
  */
 async function saveSkillStates(
   studentId: string,
   submissions: SubmissionForSkills[]
 ): Promise<SkillState[]> {
   const attemptsBySkill = new Map<string, SkillAttempt[]>();
+  const strayErrors = new Map<string, { count: number; last: Date }>();
 
   for (const sub of submissions) {
     if (sub.score === null) continue;
-    const skill = sub.dictation.targetSubskill ?? sub.dictation.targetRule;
-    const attempts = attemptsBySkill.get(skill) ?? [];
-    attempts.push({
-      ratio: sub.score / 100,
-      at: sub.createdAt,
-      errors: errorCount(sub.correctedData),
-    });
-    attemptsBySkill.set(skill, attempts);
+    const practised = sub.dictation.targetSubskill ?? sub.dictation.targetRule;
+    const errors = countedErrors(sub.correctedData);
+
+    const attempts = attemptsBySkill.get(practised) ?? [];
+    attempts.push({ ratio: sub.score / 100, at: sub.createdAt, errors: errors.length });
+    attemptsBySkill.set(practised, attempts);
+
+    // Errors d'una altra regla que la que treballava el dictat: es compten a
+    // part, perque no hi ha manera de saber quantes vegades ho hauria pogut
+    // encertar.
+    for (const error of errors) {
+      if (!error.skill || error.skill === practised) continue;
+      if (attemptsBySkill.has(error.skill)) continue;
+      const seen = strayErrors.get(error.skill) ?? { count: 0, last: sub.createdAt };
+      strayErrors.set(error.skill, {
+        count: seen.count + 1,
+        last: sub.createdAt > seen.last ? sub.createdAt : seen.last,
+      });
+    }
   }
 
   const states = [...attemptsBySkill.entries()].map(([skill, attempts]) =>
     buildSkillState(skill, attempts)
   );
+
+  // Una habilitat que nomes te errors solts encara no te domini mesurat: es
+  // desa amb confianca zero, que es exactament el que en sabem.
+  for (const [skill, seen] of strayErrors) {
+    if (seen.count < RECURRENT_ERROR_THRESHOLD) continue;
+    if (states.some((s) => s.skill === skill)) continue;
+    states.push({
+      skill,
+      mastery: 0,
+      confidence: 0,
+      attempts: 0,
+      errors: seen.count,
+      lastPracticedAt: seen.last,
+    });
+  }
 
   for (const state of states) {
     const data = {

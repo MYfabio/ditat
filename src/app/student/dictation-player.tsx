@@ -42,6 +42,8 @@ type SubmissionResult = {
   progress: string | null;
   ocrText: string | null;
   errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+  /** Paraules que l'OCR no ha llegit prou clares i que no s'han comptat. */
+  uncertain: number;
   /** Marques per dibuixar sobre la foto: subratllats, titlles i intercalacions. */
   annotations: Annotation[];
 };
@@ -281,6 +283,7 @@ export function DictationPlayer({
         progress: data.progress ?? null,
         ocrText: data.submission.ocrText,
         errors: data.submission.correctedData?.errors ?? [],
+        uncertain: data.uncertain ?? 0,
         annotations: data.annotations ?? [],
       });
       toast.success("Dictat corregit!");
@@ -571,7 +574,10 @@ export function DictationPlayer({
                 <p className="mb-1 text-sm font-medium">El teu dictat corregit</p>
                 <p className="mb-3 text-xs text-muted-foreground">
                   {result.annotations.length > 0
-                    ? "Les paraules subratllades s'escriuen com diu el text vermell, i el ganxo marca una paraula que hi falta."
+                    ? "Les paraules subratllades s'escriuen com diu el text vermell, i el ganxo marca una paraula que hi falta." +
+                      (result.uncertain > 0
+                        ? " El traç discontinu és una paraula que no s'ha pogut llegir bé: no compta com a errada."
+                        : "")
                     : "No s'han pogut situar les correccions sobre la foto; les tens a la taula de sota."}
                 </p>
                 <AnnotatedPhoto src={photoPreview} annotations={result.annotations} />

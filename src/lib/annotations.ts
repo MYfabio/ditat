@@ -10,10 +10,13 @@ import type { OcrWord } from "@/lib/ai/ocr";
  *   paraula, es marca la vocal que hauria de portar l'accent.
  * - `insert`: hi falta una paraula; es dibuixa un ganxo entre les dues
  *   paraules del costat amb la paraula que hi hauria d'anar.
+ * - `review`: l'OCR no esta segur d'haver llegit be aquesta paraula. Es marca
+ *   perque el docent hi pugui mirar, pero no es corregeix res: potser
+ *   l'alumne l'havia escrit be i qui s'equivoca es la maquina.
  *
  * Les coordenades son relatives (0-1) com les de l'OCR.
  */
-export type AnnotationKind = "underline" | "accent" | "insert";
+export type AnnotationKind = "underline" | "accent" | "insert" | "review";
 
 export type Annotation = {
   kind: AnnotationKind;
@@ -31,6 +34,8 @@ export type AnnotationError = {
   paraulaOriginal: string;
   paraulaEscrita: string;
   explicacio: string;
+  /** Fals quan la lectura de l'OCR es dubtosa i l'error no es dona per bo. */
+  countForLearning?: boolean;
 };
 
 /** Paraula que l'avaluacio marca com a absent del text de l'alumne. */
@@ -121,6 +126,20 @@ export function buildAnnotations(errors: AnnotationError[], words: OcrWord[]): A
     if (index === -1) continue;
     const word = words[index];
     cursor = index + 1;
+
+    // Lectura dubtosa: es marca per revisar, no es corregeix.
+    if (error.countForLearning === false) {
+      annotations.push({
+        kind: "review",
+        x: word.x,
+        y: word.y,
+        width: word.width,
+        height: word.height,
+        label: "?",
+        note: error.explicacio,
+      });
+      continue;
+    }
 
     const accentPosition = isAccentOnly(correct, word.text)
       ? accentedVowelPosition(correct)
