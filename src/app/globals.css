@@ -126,6 +126,11 @@
   }
   html {
     @apply font-sans;
+    /* Reserva sempre l'espai de la barra de desplacament. Sense aixo, canviar
+       d'una pestanya llarga a una de curta feia desapareixer la barra i tot el
+       contingut centrat saltava cap a la dreta: els menus de pestanyes es
+       veien ballar cada cop que es canviava de secció. */
+    scrollbar-gutter: stable;
   }
 }
 
