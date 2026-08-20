@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { type NeedsProfile } from "@/lib/needs-profile";
+import { Prisma } from "@prisma/client";
 import { generateJoinCode } from "@/lib/join-code";
+import { isKnownSkill } from "@/lib/skill-taxonomy";
+import { refreshLearningProfile } from "@/lib/adaptive-dictations";
 
 /** Busca un codi que no estigui ja en ús. */
 async function freeJoinCode() {
@@ -226,6 +229,94 @@ export async function updateStudentNeeds(studentId: string, needs: NeedsProfile)
       },
     },
   });
+
+  revalidatePath("/teacher");
+  revalidatePath("/student");
+}
+
+/**
+ * El docent esmena una classificacio de la IA.
+ *
+ * L'esmena s'aplica sobre la correccio desada perque tingui efecte de seguida
+ * a tot arreu (perfil, marques sobre la foto, panells), i alhora es registra
+ * a TeacherOverride perque quedi constancia de qui la va fer i per que. La
+ * paraula del docent val mes que la del model, pero ha de quedar clar que la
+ * va dir una persona.
+ */
+export async function overrideErrorClassification(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autoritzat.");
+
+  const submissionId = String(formData.get("submissionId") || "");
+  const errorIndex = Number(formData.get("errorIndex"));
+  const action = String(formData.get("action") || "");
+  const newSkill = String(formData.get("newSkill") || "") || null;
+  const reason = String(formData.get("reason") || "").trim();
+
+  if (!submissionId || !Number.isInteger(errorIndex) || errorIndex < 0) return;
+  if (action !== "invalidar" && action !== "reclassificar") return;
+  if (!reason) throw new Error("Cal dir per què es canvia la correcció.");
+  if (action === "reclassificar" && (!newSkill || !isKnownSkill(newSkill))) {
+    throw new Error("L'habilitat triada no és del catàleg.");
+  }
+
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    select: {
+      id: true,
+      studentId: true,
+      correctedData: true,
+      dictation: { select: { teacherId: true } },
+      student: { select: { schoolId: true } },
+    },
+  });
+  if (!submission) return;
+
+  const allowed =
+    session.user.role === "SUPERADMIN" ||
+    submission.dictation.teacherId === session.user.id ||
+    (session.user.role === "SCHOOL_COORD" &&
+      submission.student.schoolId === session.user.schoolId);
+  if (!allowed) throw new Error("Només el docent del dictat pot esmenar-ne la correcció.");
+
+  const corrected = (submission.correctedData ?? {}) as Prisma.JsonObject;
+  const stored = corrected.errors;
+  const errors = Array.isArray(stored) ? [...stored] : [];
+  const target = errors[errorIndex];
+  if (!target) return;
+
+  const error = target as Prisma.JsonObject;
+  const previousSkill = typeof error.skill === "string" ? error.skill : null;
+
+  errors[errorIndex] = {
+    ...error,
+    ...(action === "invalidar"
+      ? { countForLearning: false, skill: null }
+      : { skill: newSkill, countForLearning: true }),
+    // Qui mira aquesta correccio mes endavant ha de veure d'un cop d'ull que
+    // aqui hi va intervenir una persona.
+    overriddenByTeacher: true,
+  };
+
+  await prisma.submission.update({
+    where: { id: submissionId },
+    data: { correctedData: { ...corrected, errors } },
+  });
+
+  await prisma.teacherOverride.create({
+    data: {
+      submissionId,
+      teacherId: session.user.id,
+      errorIndex,
+      action,
+      newSkill: action === "reclassificar" ? newSkill : null,
+      previousSkill,
+      reason,
+    },
+  });
+
+  // El perfil s'ha de tornar a calcular: aquesta errada ja no diu el mateix.
+  await refreshLearningProfile(submission.studentId).catch(() => null);
 
   revalidatePath("/teacher");
   revalidatePath("/student");

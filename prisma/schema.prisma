@@ -89,6 +89,7 @@ model User {
 
   skillStates            StudentSkillState[] @relation("StudentSkills")
   taughtClassGroups      ClassGroup[]        @relation("TeacherOfClass")
+  teacherOverrides       TeacherOverride[]   @relation("OverridesByTeacher")
   dictationsCreated      Dictation[]         @relation("DictationTeacher")
   personalisedDictations Dictation[]         @relation("PersonalisedDictations")
   submissions            Submission[]        @relation("StudentSubmissions")
@@ -251,6 +252,8 @@ model Submission {
   score         Float?
   status        SubmissionStatus @default(PENDING)
 
+  overrides TeacherOverride[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -293,6 +296,42 @@ model StudentSkillState {
 
   @@unique([studentId, skill])
   @@index([studentId])
+}
+
+/// Un docent que esmena una classificacio de la IA.
+///
+/// L'esmena s'aplica de seguida sobre la correccio desada, aixi que aquesta
+/// taula no cal per fer-la efectiva: hi es perque quedi constancia de qui va
+/// canviar que i per que. Sense aixo, d'aqui a un any ningu no sabria si una
+/// correccio la va decidir el model o una persona.
+model TeacherOverride {
+  id String @id @default(cuid())
+
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  teacherId String
+  teacher   User   @relation("OverridesByTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  /// Posicio de l'errada dins de correctedData.errors.
+  errorIndex Int
+
+  /// "invalidar" (no era cap errada) o "reclassificar" (era d'una altra regla).
+  action String
+
+  /// Habilitat correcta, quan l'accio es reclassificar.
+  newSkill String?
+
+  /// Que hi havia abans, per poder desfer-ho i per saber que va canviar.
+  previousSkill String?
+
+  /// Per que ho canvia. Obligatori: una esmena sense motiu no s'enten despres.
+  reason String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([submissionId])
+  @@index([teacherId])
 }
 
 model ImprovementReport {

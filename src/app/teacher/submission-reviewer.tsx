@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye } from "lucide-react";
 import { AnnotatedPhoto } from "@/components/dashboard/annotated-photo";
 import type { Annotation } from "@/lib/annotations";
+import { skillLabel } from "@/lib/skill-taxonomy";
+import { ErrorOverride } from "./error-override";
 
 export type ReviewSubmission = {
   id: string;
@@ -25,7 +27,14 @@ export type ReviewSubmission = {
   score: number | null;
   status: string;
   createdAt: string;
-  errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+  errors: {
+    paraulaOriginal: string;
+    paraulaEscrita: string;
+    explicacio: string;
+    skill?: string | null;
+    countForLearning?: boolean;
+    overriddenByTeacher?: boolean;
+  }[];
   feedback: string | null;
   /** L'entrega venia amb foto i se'n pot demanar la imatge per corregir-la. */
   hasPhoto: boolean;
@@ -151,15 +160,40 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
                     <TableRow>
                       <TableHead>Original</TableHead>
                       <TableHead>Escrit</TableHead>
-                      <TableHead>Explicació</TableHead>
+                      <TableHead>Regla</TableHead>
+                      <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {selected.errors.map((err, i) => (
                       <TableRow key={i}>
-                        <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
+                        <TableCell className="font-medium">
+                          {err.paraulaOriginal}
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {err.explicacio}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                        <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {err.skill ? skillLabel(err.skill) : "Sense classificar"}
+                          {err.countForLearning === false && (
+                            <Badge variant="outline" className="ml-1">
+                              no compta
+                            </Badge>
+                          )}
+                          {err.overriddenByTeacher && (
+                            <Badge variant="secondary" className="ml-1">
+                              esmenat
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <ErrorOverride
+                            submissionId={selected.id}
+                            errorIndex={i}
+                            currentSkill={err.skill ?? null}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
