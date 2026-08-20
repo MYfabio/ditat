@@ -1,0 +1,237 @@
+{
+  "meta": {
+    "proyecto": "DictatsIA (repo myfabio/ditat)",
+    "documento": "Manifiesto de lo integrado en agosto de 2026",
+    "fecha": "2026-08-20",
+    "rama_origen": "claude/estas-en-dictat-4ke0e3",
+    "commit_fusion": "47bf03a",
+    "commit_base_anterior": "65be1df",
+    "estado": "FUSIONADO en master y desplegado en Railway",
+    "idioma_doc": "castellano (el codigo y los commits van en catalan, como el resto del repo)",
+    "origen_requisitos": "especificacion_app_dictados_adaptativos.docx v1.0 + peticiones directas del propietario"
+  },
+
+  "resumen": "Se cierra el ciclo de aprendizaje adaptativo: la correccion se dibuja sobre la foto del alumno, el dominio se mide por subcompetencia con confianza y recencia, cada error se clasifica por tipo y regla, lo que el OCR no lee claro no penaliza, el docente puede enmendar a la IA con constancia de quien lo hizo, y una persona sin centro puede prepararse una certificacion A1-C2 por su cuenta.",
+
+  "cobertura_especificacion": {
+    "cubierto": [
+      { "seccion": "3", "titulo": "Flujo completo del alumno", "nota": "Los 15 pasos funcionan de extremo a extremo, por teclado y por foto." },
+      { "seccion": "4", "titulo": "Taxonomia", "nota": "10 reglas divididas en 35 subcompetencias, versionada." },
+      { "seccion": "5", "titulo": "Niveles y dificultad", "nota": "Nivel de referencia (curso o MCER) separado de dominio y confianza internos." },
+      { "seccion": "6", "titulo": "Perfil de aprendizaje", "nota": "Persistido en StudentSkillState con version de algoritmo y taxonomia." },
+      { "seccion": "9", "titulo": "Motor adaptativo", "nota": "Umbrales de la spec parametrizados en MASTERY_PARAMS." },
+      { "seccion": "10", "titulo": "Correccion mecanografiada", "nota": "Tipos de error y mapeo a competencia/subcompetencia." },
+      { "seccion": "11", "titulo": "Correccion manuscrita", "nota": "Bounding boxes, confianza, overlay dibujado por la app desde coordenadas." },
+      { "seccion": "15", "titulo": "Modo docente", "nota": "Override de clasificaciones con motivo obligatorio y registro." },
+      { "seccion": "19", "titulo": "Privacidad", "nota": "Audio efimero y politica de retencion de fotos." }
+    ],
+    "parcial": [
+      { "seccion": "12", "titulo": "Feedback sin nota numerica", "nota": "DECISION DEL PROPIETARIO: la puntuacion se mantiene visible. La spec pide quitarla; se conserva a peticion expresa." },
+      { "seccion": "6", "titulo": "Dominio por subcompetencia", "nota": "El dominio solo se mide en la habilidad que el dictado declaraba. Los errores de otras habilidades se guardan como recurrentes, sin porcentaje." },
+      { "seccion": "13", "titulo": "Audio temporal", "nota": "Se borra solo en dictados personalizados al entregarlos; el resto se limpia con script manual." }
+    ],
+    "pendiente": [
+      { "seccion": "7", "titulo": "Banco de 300 dictados validados", "nota": "No existe: todo se genera al vuelo." },
+      { "seccion": "8", "titulo": "Validacion automatica del texto generado", "nota": "Solo se valida la longitud, no objetivos ni palabras prohibidas." },
+      { "seccion": "14", "titulo": "Sistema de ayudas registradas", "nota": "Hay repeticiones y velocidad, pero no se registran como senal pedagogica." },
+      { "seccion": "16", "titulo": "Analitica de grupo por subcompetencia", "nota": "Los paneles siguen mostrando por regla, no por subcompetencia." },
+      { "seccion": "18", "titulo": "Contratos JSON estrictos y trazabilidad de prompt", "nota": "No se registra modelo ni version de prompt por correccion." },
+      { "seccion": "20", "titulo": "Multilingue", "nota": "Taxonomia y prompts solo en catalan." }
+    ]
+  },
+
+  "cambios": [
+    {
+      "area": "Correccion visual sobre la foto",
+      "problema": "La foto se guardaba en Submission.photoUrl y no la leia nadie. El alumno solo veia una tabla de palabras; el docente ni siquiera la foto.",
+      "solucion": "El OCR guarda posicion y confianza de cada palabra; los errores se convierten en marcas situadas sobre la imagen.",
+      "archivos_nuevos": [
+        "src/lib/annotations.ts",
+        "src/components/dashboard/annotated-photo.tsx",
+        "src/app/api/submissions/[id]/photo/route.ts"
+      ],
+      "archivos_modificados": [
+        "src/lib/ai/ocr.ts",
+        "src/app/api/submissions/upload/route.ts",
+        "src/app/student/dictation-player.tsx",
+        "src/app/teacher/submission-reviewer.tsx",
+        "src/app/teacher/page.tsx"
+      ],
+      "tipos_de_marca": {
+        "underline": "palabra mal escrita, con la forma correcta encima",
+        "accent": "solo falla la tilde: se marca la vocal que la lleva",
+        "insert": "gancho entre dos palabras cuando falta una",
+        "review": "trazo discontinuo y '?': el OCR no lo leyo claro, no es correccion"
+      }
+    },
+    {
+      "area": "Taxonomia y estado por habilidad",
+      "problema": "El dominio se deducia cada vez desde las puntuaciones y solo a nivel de regla entera. Quien acentua bien las agudas y falla las esdrujulas tiene un problema concreto, no un problema de acentuacion.",
+      "solucion": "Arbol versionado de subcompetencias y foto persistida del dominio de cada una.",
+      "archivos_nuevos": ["src/lib/skill-taxonomy.ts", "src/lib/mastery.ts"],
+      "archivos_modificados": ["src/lib/adaptive-dictations.ts", "src/lib/learning-profile.ts"]
+    },
+    {
+      "area": "Clasificacion del error y confianza del OCR",
+      "problema": "Un error era un par de palabras y nada mas. Una letra mal leida por la maquina contaba como falta del alumno.",
+      "solucion": "Clasificador determinista (tipo + habilidad) y umbral de confianza por debajo del cual el error no penaliza.",
+      "archivos_nuevos": ["src/lib/error-classification.ts"],
+      "archivos_modificados": ["src/lib/ai/ocr.ts", "src/app/api/submissions/upload/route.ts", "src/lib/annotations.ts"]
+    },
+    {
+      "area": "El docente enmienda a la IA",
+      "problema": "Una clasificacion equivocada se quedaba en el perfil y orientaba los siguientes dictados, aunque quien tiene al alumno delante supiera que no era eso.",
+      "solucion": "Override por error con motivo obligatorio; se aplica sobre la correccion guardada y queda registrado.",
+      "archivos_nuevos": ["src/app/teacher/error-override.tsx"],
+      "archivos_modificados": ["src/app/teacher/actions.ts", "src/app/teacher/submission-reviewer.tsx"]
+    },
+    {
+      "area": "Aprendiz autonomo (A1-C2)",
+      "problema": "La app daba por hecho que todo el mundo es alumno de una clase: hacia falta ser de un centro registrado, el nivel salia del curso del grupo y el motor solo sabia crear dictados con un docente detras.",
+      "solucion": "Niveles MCER propios, dictados sin docente, alta sin centro y panel para pedirse el siguiente dictado.",
+      "archivos_nuevos": ["src/app/student/autonomous-panel.tsx"],
+      "archivos_modificados": ["src/auth.ts", "src/lib/dictation-rules.ts", "src/app/student/actions.ts", "src/app/student/page.tsx", "src/lib/adaptive-dictations.ts", "src/app/admin/page.tsx"]
+    },
+    {
+      "area": "Retencion de datos",
+      "problema": "La foto, el dato mas sensible (caligrafia de un menor), se guardaba para siempre.",
+      "solucion": "Script de borrado de fotos ya corregidas, separado del de audio porque el audio si es cache regenerable.",
+      "archivos_nuevos": ["scripts/prune-submission-photos.mjs"],
+      "archivos_modificados": [".env.example", "README.md"]
+    }
+  ],
+
+  "esquema_prisma": {
+    "modelos_nuevos": [
+      {
+        "nombre": "StudentSkillState",
+        "para_que": "Foto fechada del dominio de cada habilidad, con la version del algoritmo con que se midio.",
+        "campos": ["studentId", "skill", "mastery", "confidence", "attempts", "errors", "lastPracticedAt", "algorithmVersion", "taxonomyVersion"],
+        "indices": ["@@unique([studentId, skill])", "@@index([studentId])"]
+      },
+      {
+        "nombre": "TeacherOverride",
+        "para_que": "Constancia de quien enmendo una clasificacion de la IA y por que.",
+        "campos": ["submissionId", "teacherId", "errorIndex", "action", "newSkill", "previousSkill", "reason", "createdAt"]
+      }
+    ],
+    "campos_nuevos": [
+      { "modelo": "Dictation", "campo": "targetSubskill String?", "para_que": "Habilidad concreta a la que apunta el dictado y que recibe su resultado." },
+      { "modelo": "User", "campo": "learningLevel String?", "para_que": "Nivel MCER de quien aprende por su cuenta. Los alumnos de centro no lo usan." }
+    ],
+    "campos_relajados": [
+      { "modelo": "Dictation", "campo": "teacherId", "de": "String (obligatorio)", "a": "String? (opcional)", "para_que": "Un dictado que se genera quien aprende por su cuenta no tiene docente detras." }
+    ],
+    "migracion": {
+      "mecanismo": "El script start ejecuta 'prisma db push --accept-data-loss'; no hay carpeta de migraciones.",
+      "destructivo": false,
+      "nota": "Todo es aditivo salvo relajar una restriccion NOT NULL. Ningun DROP."
+    }
+  },
+
+  "variables_entorno": [
+    {
+      "nombre": "AUTH_ALLOW_SELF_LEARNERS",
+      "defecto": "true",
+      "para_que": "Permite el alta sin centro de quien se prepara una certificacion.",
+      "riesgo": "No expone datos de ningun centro (entra sin escuela ni grupo, y las consultas van filtradas), pero permite alta sin invitacion. Poner 'false' en un despliegue solo para escuelas.",
+      "decision_pendiente": "El propietario debe confirmar si quiere este valor por defecto."
+    },
+    {
+      "nombre": "GOOGLE_CLOUD_VISION_API_KEY",
+      "estado": "ya existia, ahora es imprescindible para una funcion nueva",
+      "nota": "Sin ella el OCR va simulado, no devuelve posiciones y NO se dibuja ninguna marca sobre la foto."
+    }
+  ],
+
+  "constantes_versionadas": {
+    "TAXONOMY_VERSION": 1,
+    "MASTERY_ALGORITHM_VERSION": 1,
+    "CLASSIFIER_VERSION": 1,
+    "OCR_CONFIDENCE_THRESHOLD": 0.75,
+    "RECURRENT_ERROR_THRESHOLD": 2,
+    "MASTERY_PARAMS": {
+      "reinforce": 0.6,
+      "consolidate": 0.8,
+      "mastered": 0.9,
+      "recencyDecay": 0.75,
+      "attemptsForConfidence": 5,
+      "staleAfterDays": 45,
+      "raiseAfterStreak": 3,
+      "raiseAfterScore": 0.85,
+      "lowerAfterStreak": 2,
+      "confidenceWeight": 0.75,
+      "minDifficulty": 1,
+      "maxDifficulty": 5
+    },
+    "por_que_versionado": "Permite recalcular el dia que cambien los umbrales sin confundir medidas viejas con nuevas."
+  },
+
+  "decisiones_y_justificacion": [
+    {
+      "decision": "El clasificador de errores es codigo determinista, no una pregunta al modelo.",
+      "por_que": "El perfil del alumno se construye encima. Un modelo que un dia diga 'accentuacio' y otro 'ortografia' para la misma palabra haria que el dominio dependiera de cuando se corrigio."
+    },
+    {
+      "decision": "El dominio solo se mide en la habilidad que el dictado declaraba.",
+      "por_que": "Es la unica donde sabemos cuantas oportunidades tuvo de acertar. Poner un porcentaje a una habilidad que quiza salia dos veces en el texto seria inventarse una medida."
+    },
+    {
+      "decision": "Los errores recurrentes en otras habilidades se guardan aparte, con confianza cero.",
+      "por_que": "No dicen cuanto domina, pero si que hay algo que mirar. Umbral de 2 para que un error suelto no genere ruido."
+    },
+    {
+      "decision": "La eleccion de la siguiente habilidad pondera dominio Y confianza (confidenceWeight 0.75).",
+      "por_que": "Con el valor inicial (0.5) una habilidad vista una sola vez al 30% le ganaba a otra medida ocho veces al 55%: un mal dia reorientaba el curso del alumno. Se detecto probandolo."
+    },
+    {
+      "decision": "Con nivel MCER, el orden de habilidades sin practicar se invierte.",
+      "por_que": "A quien se prepara un C1 se le suponen las basicas. Sin esto, su primer dictado era 'c davant a, o, u', de segundo de primaria."
+    },
+    {
+      "decision": "Un error con confianza de OCR baja no baja la nota; se recalcula dejandolo fuera.",
+      "por_que": "Criterio de aceptacion explicito de la spec (seccion 22). No se puede penalizar por una letra que quiza ni escribio mal."
+    },
+    {
+      "decision": "La foto se sirve por endpoint aparte y no incrustada en la pagina.",
+      "por_que": "Se guarda como data URL en la fila; el listado del docente cargaba todas las fotos de la clase para mostrar nombres y notas. Mismo motivo por el que ya se hacia con la locucion."
+    },
+    {
+      "decision": "El prune de fotos va en un script separado del de audio.",
+      "por_que": "El audio es cache regenerable; la foto no. Mezclarlos en un script llamado 'prune-dictation-audio' invitaba a borrar una cosa creyendo que borrabas la otra."
+    },
+    {
+      "decision": "La puntuacion numerica se mantiene visible para el alumno.",
+      "por_que": "Peticion expresa del propietario, en contra de la seccion 12 de la spec. El score ademas alimenta el calculo de dominio."
+    }
+  ],
+
+  "limitaciones_conocidas": [
+    "El parseo de textAnnotations/fullTextAnnotation de Google Vision no se ha probado con una respuesta real: sin GOOGLE_CLOUD_VISION_API_KEY el OCR va simulado.",
+    "Las entregas corregidas antes de este cambio no llevan clasificacion: apareceran como 'Sense classificar' en el panel del docente. No es un fallo.",
+    "El clasificador no cubre R/RR ni otras reglas reales del catalan que la taxonomia actual no incluye: esos errores quedan sin habilidad a proposito.",
+    "Con dos errores en la misma palabra, el clasificador se queda con la primera regla que reconoce (barrido letra a letra).",
+    "El borrado de fotos y de audio necesita un cron en produccion: los scripts no se ejecutan solos."
+  ],
+
+  "verificacion_hecha": {
+    "build": "npx next build (incluye TypeScript) sin errores",
+    "lint": "npx eslint sin avisos",
+    "pruebas_manuales_de_logica": [
+      "Clasificador: 24 casos reales de catalan (geminada, b/v, ss/c/z, tg-tj, j/g, ix/tx, qu/gu, h muda, agudas/llanas/esdrujulas, dieresi, apostrofo) — 24/24",
+      "Marcas: falta ortografica, solo acento, primera palabra omitida, palabra repetida, error ausente de la foto",
+      "Dominio: recencia (media plana 0.63 vs ponderada 0.77), confianza (1 intento 0.18, 10 intentos 0.86, uno de hace 200 dias 0.04), techo y suelo de dificultad",
+      "Niveles MCER: longitudes, curriculo equivalente y habilidad elegida para C1 y para 3o de primaria"
+    ],
+    "no_verificado": "Nada se ha ejecutado contra la base de datos de produccion ni contra las APIs reales de Vision, Claude o Gemini desde este entorno."
+  },
+
+  "siguientes_pasos_sugeridos": [
+    { "prioridad": 1, "que": "Poner GOOGLE_CLOUD_VISION_API_KEY en Railway y probar con una foto real", "por_que": "Es lo unico que separa la correccion visual de funcionar de verdad." },
+    { "prioridad": 2, "que": "Cron para los dos scripts de limpieza", "por_que": "Sin el, fotos y audio se acumulan indefinidamente." },
+    { "prioridad": 3, "que": "Copias de seguridad programadas (pg_dump via GitHub Actions)", "por_que": "Railway solo ofrece backups en plan Pro." },
+    { "prioridad": 4, "que": "Analitica por subcompetencia en los paneles (spec 16)", "por_que": "El dato ya se guarda pero no se muestra." },
+    { "prioridad": 5, "que": "Trazabilidad de modelo y version de prompt por correccion (spec 18)", "por_que": "Criterio de aceptacion pendiente." },
+    { "prioridad": 6, "que": "Banco de dictados validados y validacion del texto generado (spec 7 y 8)", "por_que": "Hoy todo se genera al vuelo sin validar objetivos." }
+  ]
+}
