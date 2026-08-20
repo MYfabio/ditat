@@ -1,10 +1,13 @@
 import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 import { getMockDictationText } from "@/lib/ai/mock-dictations";
 import { gradeLabel, ruleLabel, lengthForGrade, countWords } from "@/lib/dictation-rules";
+import { skillLabel } from "@/lib/skill-taxonomy";
 
 export type GenerateDictationInput = {
   gradeLevel: string;
   targetRule: string;
+  /** Habilitat concreta dins la regla ("accentuacio.agudes"), si se'n vol una. */
+  targetSubskill?: string | null;
   neeAdaptation?: "cap" | "tdah" | "dislexia";
 };
 
@@ -17,8 +20,9 @@ export type GenerateDictationResult = {
 export async function generateDictationText(
   input: GenerateDictationInput
 ): Promise<GenerateDictationResult> {
-  const { gradeLevel, targetRule, neeAdaptation = "cap" } = input;
-  const title = `Dictat: ${ruleLabel(targetRule)} (${gradeLabel(gradeLevel)})`;
+  const { gradeLevel, targetRule, targetSubskill, neeAdaptation = "cap" } = input;
+  const focus = targetSubskill ? skillLabel(targetSubskill) : ruleLabel(targetRule);
+  const title = `Dictat: ${focus} (${gradeLabel(gradeLevel)})`;
 
   const client = getAnthropicClient();
   if (!hasAnthropicKey || !client) {
@@ -37,6 +41,11 @@ export async function generateDictationText(
   const prompt = `Ets un mestre expert en llengua catalana seguint el currículum del Departament d'Educació de Catalunya.
 Genera un text de dictat en català, adequat per a l'alumnat de ${gradeLabel(gradeLevel)}, que posi
 especial èmfasi en la regla ortogràfica següent: "${ruleLabel(targetRule)}".
+${
+  targetSubskill
+    ? `Dins d'aquesta regla, concentra't especialment en: "${skillLabel(targetSubskill)}". Les paraules que hi treballin han de ser-hi diverses vegades i en contextos diferents, no repetint la mateixa paraula.`
+    : ""
+}
 
 LLARGADA OBLIGATÒRIA: entre ${length.min} i ${length.max} paraules (${length.cycle}, ${length.ages}).
 ${length.guidance}

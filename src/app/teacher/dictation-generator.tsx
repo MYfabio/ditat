@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wand2, Loader2, Sparkles, Ruler } from "lucide-react";
 import { toast } from "sonner";
 import { GRADE_LEVELS, ORTHOGRAPHIC_RULES, lengthForGrade, countWords } from "@/lib/dictation-rules";
+import { TAXONOMY } from "@/lib/skill-taxonomy";
 import { SPEED_OPTIONS, COUNTDOWN_OPTIONS, DEFAULT_PLAYBACK } from "@/lib/playback-settings";
 
 const NEE_OPTIONS = [
@@ -30,7 +31,11 @@ export function DictationGenerator({
 }) {
   const router = useRouter();
   const [gradeLevel, setGradeLevel] = useState(GRADE_LEVELS[3].value);
-  const [targetRule, setTargetRule] = useState(ORTHOGRAPHIC_RULES[0].value);
+  const [targetRule, setTargetRule] = useState<string>(ORTHOGRAPHIC_RULES[0].value);
+  // "" = tota la regla. En canviar de regla es buida, perquè les subhabilitats
+  // d'una no valen per a l'altra.
+  const [targetSubskill, setTargetSubskill] = useState("");
+  const subskills = TAXONOMY.find((c) => c.key === targetRule)?.subskills ?? [];
   const [neeAdaptation, setNeeAdaptation] = useState("cap");
   const [classGroupId, setClassGroupId] = useState<string>(classGroups[0]?.id ?? "none");
   // Marcada per defecte: la veu del navegador depèn de cada ordinador i sona
@@ -57,6 +62,7 @@ export function DictationGenerator({
         body: JSON.stringify({
           gradeLevel,
           targetRule,
+          targetSubskill: targetSubskill || null,
           neeAdaptation,
           classGroupId: classGroupId === "none" ? undefined : classGroupId,
           withAudio,
@@ -103,7 +109,14 @@ export function DictationGenerator({
             </Select>
           </Field>
           <Field label="Regla ortogràfica">
-            <Select value={targetRule} onValueChange={(v) => v && setTargetRule(v)}>
+            <Select
+              value={targetRule}
+              onValueChange={(v) => {
+                if (!v) return;
+                setTargetRule(v);
+                setTargetSubskill("");
+              }}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -116,6 +129,26 @@ export function DictationGenerator({
               </SelectContent>
             </Select>
           </Field>
+          {subskills.length > 0 && (
+            <Field label="Dins de la regla (opcional)">
+              <Select
+                value={targetSubskill}
+                onValueChange={(v) => setTargetSubskill(v ?? "")}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tota la regla</SelectItem>
+                  {subskills.map((sub) => (
+                    <SelectItem key={sub.key} value={sub.key}>
+                      {sub.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
           <Field label="Adaptació NEE">
             <Select value={neeAdaptation} onValueChange={(v) => v && setNeeAdaptation(v)}>
               <SelectTrigger className="w-full">

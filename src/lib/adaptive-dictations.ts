@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { buildLearningProfile, type LearningProfile } from "@/lib/learning-profile";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
-import { ruleLabel } from "@/lib/dictation-rules";
+import { skillLabel, skillsExpectedAt, TAXONOMY_VERSION } from "@/lib/skill-taxonomy";
+import {
+  buildSkillState,
+  pickNextSkill,
+  MASTERY_ALGORITHM_VERSION,
+  type SkillAttempt,
+  type SkillState,
+} from "@/lib/mastery";
 import {
   parseNeedsProfile,
   generationAdaptation,
@@ -23,7 +30,9 @@ export async function loadLearningProfile(studentId: string): Promise<LearningPr
 
   const submissions = await prisma.submission.findMany({
     where: { studentId },
-    include: { dictation: { select: { targetRule: true, gradeLevel: true } } },
+    include: {
+      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -44,12 +53,20 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
 
   const submissions = await prisma.submission.findMany({
     where: { studentId },
-    include: { dictation: { select: { targetRule: true, gradeLevel: true } } },
+    include: {
+      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
   const gradeLevel = student.classGroup?.gradeLevel ?? "4-primaria";
   const profile = buildLearningProfile(submissions, gradeLevel);
+
+  // L'estat per habilitat es el que decideix que toca practicar. Es desa i no
+  // es recalcula al vol perque el motor pugui mirar coses que la puntuacio
+  // sola no diu: quant fa que no es toca una habilitat, i amb quina versio de
+  // l'algorisme es va mesurar.
+  const states = await saveSkillStates(student.id, submissions);
 
   await prisma.improvementReport.create({
     data: {
@@ -62,6 +79,13 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
         weakestRule: profile.weakestRule,
         curriculumProgress: profile.curriculumProgress,
         observations: profile.observations,
+        skills: states.map((s) => ({
+          skill: s.skill,
+          label: skillLabel(s.skill),
+          mastery: s.mastery,
+          confidence: s.confidence,
+          attempts: s.attempts,
+        })),
       },
     },
   });
@@ -70,19 +94,93 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
     student.id,
     gradeLevel,
     profile,
+    states,
     parseNeedsProfile(student.needsProfile)
   );
 
   return profile;
 }
 
+type SubmissionForSkills = {
+  score: number | null;
+  createdAt: Date;
+  correctedData: unknown;
+  dictation: { targetRule: string; targetSubskill: string | null };
+};
+
+/** Quants errors va comptar l'avaluacio en una entrega. */
+function errorCount(correctedData: unknown) {
+  if (!correctedData || typeof correctedData !== "object") return 0;
+  const errors = (correctedData as { errors?: unknown }).errors;
+  return Array.isArray(errors) ? errors.length : 0;
+}
+
+/**
+ * Recalcula i desa l'estat de cada habilitat que l'alumne ha practicat.
+ *
+ * Un dictat compta per a la seva subhabilitat quan en te una declarada, i si
+ * no, per a la regla sencera: mentre els errors no estiguin classificats un
+ * per un, aquesta es tota la resolucio que tenim honestament.
+ */
+async function saveSkillStates(
+  studentId: string,
+  submissions: SubmissionForSkills[]
+): Promise<SkillState[]> {
+  const attemptsBySkill = new Map<string, SkillAttempt[]>();
+
+  for (const sub of submissions) {
+    if (sub.score === null) continue;
+    const skill = sub.dictation.targetSubskill ?? sub.dictation.targetRule;
+    const attempts = attemptsBySkill.get(skill) ?? [];
+    attempts.push({
+      ratio: sub.score / 100,
+      at: sub.createdAt,
+      errors: errorCount(sub.correctedData),
+    });
+    attemptsBySkill.set(skill, attempts);
+  }
+
+  const states = [...attemptsBySkill.entries()].map(([skill, attempts]) =>
+    buildSkillState(skill, attempts)
+  );
+
+  for (const state of states) {
+    const data = {
+      mastery: state.mastery,
+      confidence: state.confidence,
+      attempts: state.attempts,
+      errors: state.errors,
+      lastPracticedAt: state.lastPracticedAt,
+      algorithmVersion: MASTERY_ALGORITHM_VERSION,
+      taxonomyVersion: TAXONOMY_VERSION,
+    };
+    await prisma.studentSkillState.upsert({
+      where: { studentId_skill: { studentId, skill: state.skill } },
+      create: { studentId, skill: state.skill, ...data },
+      update: data,
+    });
+  }
+
+  return states;
+}
+
 async function preparePersonalisedDictation(
   studentId: string,
   gradeLevel: string,
   profile: LearningProfile,
+  states: SkillState[],
   needs: NeedsProfile
 ) {
-  if (!profile.weakestRule) return;
+  // Quina habilitat toca ara, segons domini, fiabilitat i el que el curriculum
+  // ja espera del seu curs. Si encara no hi ha estat, es cau a la regla mes
+  // fluixa del perfil, que es com es feia abans.
+  const skill = pickNextSkill(states, skillsExpectedAt(gradeLevel)) ?? profile.weakestRule;
+  if (!skill) return;
+
+  // El text es genera per a la regla; la subhabilitat afina cap a on, i es el
+  // que rebra el resultat d'aquest dictat.
+  const targetRule = skill.split(".")[0];
+  const targetSubskill = skill.includes(".") ? skill : null;
 
   // Només hi ha d'haver un dictat personalitzat pendent alhora: si l'anterior
   // encara no s'ha entregat, se substitueix pel nou (més ben orientat).
@@ -99,16 +197,17 @@ async function preparePersonalisedDictation(
   // observacions automàtiques: detectar un patró no és diagnosticar res.
   const { text } = await generateDictationText({
     gradeLevel,
-    targetRule: profile.weakestRule,
+    targetRule,
+    targetSubskill,
     neeAdaptation: generationAdaptation(needs),
   });
 
-  const title = `Dictat personalitzat: ${ruleLabel(profile.weakestRule)}`;
+  const title = `Dictat personalitzat: ${skillLabel(skill)}`;
 
   if (pending) {
     await prisma.dictation.update({
       where: { id: pending.id },
-      data: { title, targetRule: profile.weakestRule, gradeLevel, rawText: text },
+      data: { title, targetRule, targetSubskill, gradeLevel, rawText: text },
     });
     return;
   }
@@ -119,7 +218,8 @@ async function preparePersonalisedDictation(
   await prisma.dictation.create({
     data: {
       title,
-      targetRule: profile.weakestRule,
+      targetRule,
+      targetSubskill,
       gradeLevel,
       rawText: text,
       isAIGenerated: true,

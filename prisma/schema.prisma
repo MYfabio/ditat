@@ -87,6 +87,7 @@ model User {
   accounts Account[]
   sessions Session[]
 
+  skillStates            StudentSkillState[] @relation("StudentSkills")
   taughtClassGroups      ClassGroup[]        @relation("TeacherOfClass")
   dictationsCreated      Dictation[]         @relation("DictationTeacher")
   personalisedDictations Dictation[]         @relation("PersonalisedDictations")
@@ -166,18 +167,21 @@ model ClassGroup {
 // ---------------------------------------------------------------------------
 
 model Dictation {
-  id            String  @id @default(cuid())
-  title         String
-  targetRule    String
-  gradeLevel    String
-  rawText       String  @db.Text
+  id             String  @id @default(cuid())
+  title          String
+  targetRule     String
+  // Habilitat concreta dins de la regla ("accentuacio.agudes"). Quan hi es, es
+  // ella qui rep el resultat del dictat; si no, el rep la regla sencera.
+  targetSubskill String?
+  gradeLevel     String
+  rawText        String  @db.Text
   // El docent ha demanat locucio generada per a aquest dictat. L'audio en si
   // no viu aqui: veure DictationAudio.
-  wantsAudio    Boolean @default(false)
+  wantsAudio     Boolean @default(false)
   // Quin servei ha locutat el dictat l'ultim cop: "gemini", "openai" o
   // "browser" (veu del navegador, quan cap servei estava disponible).
-  audioSource   String?
-  isAIGenerated Boolean @default(true)
+  audioSource    String?
+  isAIGenerated  Boolean @default(true)
 
   // Com vol el docent que l'alumne escolti aquest dictat:
   // { defaultSpeed: number, maxRepetitions: number|null, forceHiddenScreen: boolean }
@@ -251,6 +255,43 @@ model Submission {
   updatedAt DateTime @updatedAt
 
   @@index([dictationId])
+  @@index([studentId])
+}
+
+/// Que domina un alumne de cada habilitat ortografica, i com de segurs n'estem.
+///
+/// Es podria recalcular sempre des de zero llegint tot l'historial, com es feia
+/// fins ara, pero llavors el motor adaptatiu no pot saber res que no es
+/// dedueixi de les puntuacions: ni quant fa que no es practica una habilitat,
+/// ni amb quina versio de l'algorisme es va mesurar. Aixo es aquella foto,
+/// desada i datada.
+model StudentSkillState {
+  id String @id @default(cuid())
+
+  studentId String
+  student   User   @relation("StudentSkills", fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Clau de la taxonomia: "accentuacio" o "accentuacio.agudes".
+  skill String
+
+  /// Que en domina, de 0 a 1.
+  mastery    Float @default(0)
+  /// Com de fiable es aquesta mesura: puja amb evidencia recent i repetida.
+  confidence Float @default(0)
+
+  attempts Int @default(0)
+  errors   Int @default(0)
+
+  lastPracticedAt DateTime?
+
+  /// Amb quines regles es va calcular, per poder recalcular-ho tot el dia que
+  /// canviin sense confondre mesures velles amb noves.
+  algorithmVersion Int @default(1)
+  taxonomyVersion  Int @default(1)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, skill])
   @@index([studentId])
 }
 

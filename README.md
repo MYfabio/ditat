@@ -61,4 +61,6 @@ Google/Microsoft SSO, Anthropic, Google Cloud Vision, OpenAI).
 - `src/app/api/submissions/[id]/photo` — Foto d'una entrega, per corregir-la a sobre
 - `src/lib/annotations.ts` — Converteix els errors en marques (subratllats, tildes, intercalacions)
 - `scripts/prune-submission-photos.mjs` — Esborra les fotos dels dictats ja corregits
+- `src/lib/skill-taxonomy.ts` — Arbre versionat de competencies i subcompetencies
+- `src/lib/mastery.ts` — Calcul de domini, confianca i dificultat recomanada (versionat)
 - `prisma/schema.prisma` — Esquema multi-tenant (School, User, ClassGroup, Dictation, Submission, ImprovementReport)
