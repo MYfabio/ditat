@@ -26,12 +26,24 @@ export function AnnotatedPhoto({
   // Proporció de la foto (amplada / alçada). Es descobreix quan carrega; fins
   // llavors no es dibuixa res, per no col·locar cap marca fora de lloc.
   const [aspect, setAspect] = useState<number | null>(null);
+  // Les fotos velles s'esborren un cop corregides (prune-submission-photos):
+  // quan ja no hi es, val mes dir-ho que deixar-hi una imatge trencada.
+  const [missing, setMissing] = useState(false);
 
   // Les coordenades de l'OCR van de 0 a 1 en tots dos eixos; aquí l'eix
   // horitzontal passa a mesurar-se en alçades de foto, com el viewBox.
   const scaled = aspect
     ? annotations.map((a) => ({ ...a, x: a.x * aspect, width: a.width * aspect }))
     : [];
+
+  if (missing) {
+    return (
+      <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+        La foto d&apos;aquest dictat ja s&apos;ha esborrat. La correcció es conserva sencera
+        més avall.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -45,6 +57,7 @@ export function AnnotatedPhoto({
             const img = e.currentTarget;
             if (img.naturalHeight > 0) setAspect(img.naturalWidth / img.naturalHeight);
           }}
+          onError={() => setMissing(true)}
         />
         {showMarks && scaled.length > 0 && aspect && (
           <svg
