@@ -26,6 +26,14 @@ npm run dev
 
 Obre [http://localhost:3000](http://localhost:3000).
 
+### Qui aprèn pel seu compte
+
+A més de l'alumnat d'un centre, s'hi pot donar d'alta qualsevol persona que es
+prepari una certificació (A1-C2) pel seu compte: entra amb el seu correu, tria
+el nivell i es genera ella mateixa els dictats, que surten del seu perfil igual
+que els d'un alumne de classe. No pertany a cap centre ni grup, i per tant no
+veu cap dada d'escola. Es pot tancar amb `AUTH_ALLOW_SELF_LEARNERS="false"`.
+
 ### Sense base de dades ni claus d'API
 
 L'aplicacio arrenca i es pot navegar sencera sense `DATABASE_URL`: cada pantalla mostra

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { buildLearningProfile, type LearningProfile } from "@/lib/learning-profile";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
 import { skillLabel, skillsExpectedAt, TAXONOMY_VERSION } from "@/lib/skill-taxonomy";
+import { isMcerLevel } from "@/lib/dictation-rules";
 import {
   buildSkillState,
   pickNextSkill,
@@ -14,6 +15,21 @@ import {
   generationAdaptation,
   type NeedsProfile,
 } from "@/lib/needs-profile";
+
+/**
+ * Nivell amb que es mesura i es genera per a una persona.
+ *
+ * Mana el curs del grup classe quan n'hi ha: es el que diu el centre. Qui
+ * aprèn pel seu compte no en te, i aleshores val el nivell que s'ha fixat ell
+ * mateix ("C1"); nomes si no hi ha ni una cosa ni l'altra es cau al valor per
+ * defecte.
+ */
+function levelOf(student: {
+  classGroup?: { gradeLevel: string } | null;
+  learningLevel?: string | null;
+}) {
+  return student.classGroup?.gradeLevel ?? student.learningLevel ?? "4-primaria";
+}
 
 /**
  * Munta el perfil d'aprenentatge a partir de l'historial, sense desar res.
@@ -36,7 +52,7 @@ export async function loadLearningProfile(studentId: string): Promise<LearningPr
     orderBy: { createdAt: "asc" },
   });
 
-  return buildLearningProfile(submissions, student.classGroup?.gradeLevel ?? "4-primaria");
+  return buildLearningProfile(submissions, levelOf(student));
 }
 
 /**
@@ -59,7 +75,7 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
     orderBy: { createdAt: "asc" },
   });
 
-  const gradeLevel = student.classGroup?.gradeLevel ?? "4-primaria";
+  const gradeLevel = levelOf(student);
   const profile = buildLearningProfile(submissions, gradeLevel);
 
   // L'estat per habilitat es el que decideix que toca practicar. Es desa i no
@@ -224,7 +240,16 @@ async function preparePersonalisedDictation(
   // Quina habilitat toca ara, segons domini, fiabilitat i el que el curriculum
   // ja espera del seu curs. Si encara no hi ha estat, es cau a la regla mes
   // fluixa del perfil, que es com es feia abans.
-  const skill = pickNextSkill(states, skillsExpectedAt(gradeLevel)) ?? profile.weakestRule;
+  // Ordre en que s'ataquen les habilitats que encara no s'han practicat.
+  //
+  // A l'escola es va de la primera a l'ultima, que es com avanca el curs. Qui
+  // es prepara una certificacio ja se suposa que porta les basiques apreses:
+  // comencar-li el C1 per la c i la qu de segon de primaria seria fer-li
+  // perdre el temps, aixi que va al reves i baixa nomes si de debo hi falla.
+  const expected = skillsExpectedAt(gradeLevel);
+  const order = isMcerLevel(gradeLevel) ? [...expected].reverse() : expected;
+
+  const skill = pickNextSkill(states, order) ?? profile.weakestRule;
   if (!skill) return;
 
   // El text es genera per a la regla; la subhabilitat afina cap a on, i es el
@@ -262,8 +287,8 @@ async function preparePersonalisedDictation(
     return;
   }
 
+  // Sense docent el dictat es igualment valid: es de qui aprèn pel seu compte.
   const teacherId = teacher?.id ?? (await resolveFallbackTeacher(studentId));
-  if (!teacherId) return;
 
   await prisma.dictation.create({
     data: {

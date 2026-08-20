@@ -86,7 +86,8 @@ async function loadAdminData(filters: { schoolId?: string; q?: string }) {
       ...recentDictations.map((d) => ({
         id: `dictation-${d.id}`,
         type: "Dictat generat" as const,
-        actor: d.teacher.name || d.teacher.email,
+        // Sense docent vol dir que se'l va generar qui aprèn pel seu compte.
+        actor: d.teacher ? d.teacher.name || d.teacher.email : "Aprenentatge autònom",
         detail: d.title,
         date: d.createdAt,
       })),

@@ -75,6 +75,11 @@ model User {
   role          Role      @default(STUDENT)
   needsProfile  Json?
 
+  /// Nivell que es prepara qui aprèn pel seu compte, sense cap grup classe
+  /// ("B2", "C1"...). Els alumnes d'un centre no el fan servir: el seu nivell
+  /// surt del curs del grup.
+  learningLevel String?
+
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
@@ -188,8 +193,10 @@ model Dictation {
   // { defaultSpeed: number, maxRepetitions: number|null, forceHiddenScreen: boolean }
   playbackSettings Json?
 
-  teacherId String
-  teacher   User   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  /// Buit quan el dictat se l'ha generat una persona que aprèn pel seu
+  /// compte: no hi ha cap docent al darrere, i el dictat és seu.
+  teacherId String?
+  teacher   User?   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
 
   classGroupId String?
   classGroup   ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)

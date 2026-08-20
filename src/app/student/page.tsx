@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DictationPlayer } from "./dictation-player";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
+import { AutonomousPanel } from "./autonomous-panel";
 import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
@@ -16,7 +17,10 @@ import { ruleLabel } from "@/lib/dictation-rules";
 async function loadStudentData(studentId: string, classGroupId: string | null) {
   try {
     const [me, dictations, submissions, latestReport] = await Promise.all([
-      prisma.user.findUnique({ where: { id: studentId }, select: { needsProfile: true } }),
+      prisma.user.findUnique({
+        where: { id: studentId },
+        select: { needsProfile: true, learningLevel: true },
+      }),
       prisma.dictation.findMany({
         where: {
           OR: [
@@ -50,6 +54,7 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
     return {
       dbAvailable: true as const,
       needs: parseNeedsProfile(me?.needsProfile),
+      learningLevel: me?.learningLevel ?? null,
       dictations,
       submissions,
       latestReport,
@@ -100,6 +105,13 @@ export default async function StudentPage() {
     curriculumProgress?: { expected: number; mastered: number };
   } | null;
 
+  const learningLevel = data.dbAvailable ? data.learningLevel : null;
+  // Un dictat encara sense entregar: mentre en tingui un, no se'n prepara cap més.
+  const submittedIds = new Set(submissions.map((s) => s.dictationId));
+  const hasPendingDictation = dictations.some(
+    (d) => d.targetStudentId !== null && !submittedIds.has(d.id)
+  );
+
   const bestScore = submissions.reduce((max, s) => Math.max(max, s.score ?? 0), 0);
   const streak = computeStreak(submissions.map((s) => s.createdAt));
 
@@ -133,16 +145,20 @@ export default async function StudentPage() {
         {!session?.user?.classGroupId && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Apunta&apos;t a la teva classe</CardTitle>
+              <CardTitle className="text-base">Aprèn pel teu compte</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Escriu el codi que t&apos;ha donat el teu/a docent per començar a rebre
-                dictats.
-              </p>
-              <Suspense fallback={<div className="h-16" />}>
-                <JoinClass hasGroup={false} />
-              </Suspense>
+            <CardContent className="space-y-5">
+              <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
+
+              <div className="space-y-3 border-t pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Si el teu centre fa servir DictatsIA, escriu el codi que t&apos;ha donat
+                  el teu/a docent i passaràs a rebre els dictats de la classe.
+                </p>
+                <Suspense fallback={<div className="h-16" />}>
+                  <JoinClass hasGroup={false} />
+                </Suspense>
+              </div>
             </CardContent>
           </Card>
         )}
