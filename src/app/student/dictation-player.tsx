@@ -31,13 +31,21 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_PLAYBACK, SPEED_OPTIONS, type PlaybackSettings } from "@/lib/playback-settings";
+import { AnnotatedPhoto } from "@/components/dashboard/annotated-photo";
+import type { Annotation } from "@/lib/annotations";
 import { toast } from "sonner";
 
 type SubmissionResult = {
   score: number;
   feedback: string;
+  /** Que ha millorat respecte dels dictats anteriors, si hi ha res a dir. */
+  progress: string | null;
   ocrText: string | null;
   errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+  /** Paraules que l'OCR no ha llegit prou clares i que no s'han comptat. */
+  uncertain: number;
+  /** Marques per dibuixar sobre la foto: subratllats, titlles i intercalacions. */
+  annotations: Annotation[];
 };
 
 function chunkSentences(text: string, size = 2) {
@@ -272,8 +280,11 @@ export function DictationPlayer({
       setResult({
         score: data.submission.score,
         feedback: data.submission.correctedData?.feedback ?? "",
+        progress: data.progress ?? null,
         ocrText: data.submission.ocrText,
         errors: data.submission.correctedData?.errors ?? [],
+        uncertain: data.uncertain ?? 0,
+        annotations: data.annotations ?? [],
       });
       toast.success("Dictat corregit!");
       setShowText(true);
@@ -552,27 +563,30 @@ export function DictationPlayer({
               <div>
                 <p className="font-medium">Puntuació: {result.score}%</p>
                 <p className="text-muted-foreground">{result.feedback}</p>
+                {result.progress && (
+                  <p className="mt-1 font-medium text-primary">{result.progress}</p>
+                )}
               </div>
             </div>
 
+            {photoPreview && (
+              <div className="rounded-md border p-4">
+                <p className="mb-1 text-sm font-medium">El teu dictat corregit</p>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {result.annotations.length > 0
+                    ? "Les paraules subratllades s'escriuen com diu el text vermell, i el ganxo marca una paraula que hi falta." +
+                      (result.uncertain > 0
+                        ? " El traç discontinu és una paraula que no s'ha pogut llegir bé: no compta com a errada."
+                        : "")
+                    : "No s'han pogut situar les correccions sobre la foto; les tens a la taula de sota."}
+                </p>
+                <AnnotatedPhoto src={photoPreview} annotations={result.annotations} />
+              </div>
+            )}
+
             <div className="rounded-md border p-4">
               <p className="mb-3 text-sm font-medium">Autocorregeix el teu dictat</p>
-              <div
-                className={`grid gap-4 ${
-                  photoPreview ? "sm:grid-cols-[auto_1fr_1fr]" : "sm:grid-cols-2"
-                }`}
-              >
-                {photoPreview && (
-                  <div>
-                    <p className="mb-1 text-xs text-muted-foreground">La teva foto</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photoPreview}
-                      alt="Foto que has enviat"
-                      className="h-32 w-32 rounded-md border object-cover"
-                    />
-                  </div>
-                )}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Text original del dictat</p>
                   <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">{rawText}</p>

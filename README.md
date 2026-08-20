@@ -26,6 +26,14 @@ npm run dev
 
 Obre [http://localhost:3000](http://localhost:3000).
 
+### Qui aprèn pel seu compte
+
+A més de l'alumnat d'un centre, s'hi pot donar d'alta qualsevol persona que es
+prepari una certificació (A1-C2) pel seu compte: entra amb el seu correu, tria
+el nivell i es genera ella mateixa els dictats, que surten del seu perfil igual
+que els d'un alumne de classe. No pertany a cap centre ni grup, i per tant no
+veu cap dada d'escola. Es pot tancar amb `AUTH_ALLOW_SELF_LEARNERS="false"`.
+
 ### Sense base de dades ni claus d'API
 
 L'aplicacio arrenca i es pot navegar sencera sense `DATABASE_URL`: cada pantalla mostra
@@ -58,4 +66,10 @@ Google/Microsoft SSO, Anthropic, Google Cloud Vision, OpenAI).
 - `src/app/student` — Espai de l'Alumnat (amb adaptacions NEE)
 - `src/app/api/dictations/generate` — Generacio de dictats amb IA
 - `src/app/api/submissions/upload` — OCR + avaluacio de fotos de dictats
+- `src/app/api/submissions/[id]/photo` — Foto d'una entrega, per corregir-la a sobre
+- `src/lib/annotations.ts` — Converteix els errors en marques (subratllats, tildes, intercalacions)
+- `scripts/prune-submission-photos.mjs` — Esborra les fotos dels dictats ja corregits
+- `src/lib/skill-taxonomy.ts` — Arbre versionat de competencies i subcompetencies
+- `src/lib/error-classification.ts` — Tipus d'error i habilitat a que s'atribueix (versionat)
+- `src/lib/mastery.ts` — Calcul de domini, confianca i dificultat recomanada (versionat)
 - `prisma/schema.prisma` — Esquema multi-tenant (School, User, ClassGroup, Dictation, Submission, ImprovementReport)

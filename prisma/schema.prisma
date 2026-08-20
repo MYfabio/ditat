@@ -75,6 +75,11 @@ model User {
   role          Role      @default(STUDENT)
   needsProfile  Json?
 
+  /// Nivell que es prepara qui aprèn pel seu compte, sense cap grup classe
+  /// ("B2", "C1"...). Els alumnes d'un centre no el fan servir: el seu nivell
+  /// surt del curs del grup.
+  learningLevel String?
+
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
@@ -87,7 +92,9 @@ model User {
   accounts Account[]
   sessions Session[]
 
+  skillStates            StudentSkillState[] @relation("StudentSkills")
   taughtClassGroups      ClassGroup[]        @relation("TeacherOfClass")
+  teacherOverrides       TeacherOverride[]   @relation("OverridesByTeacher")
   dictationsCreated      Dictation[]         @relation("DictationTeacher")
   personalisedDictations Dictation[]         @relation("PersonalisedDictations")
   submissions            Submission[]        @relation("StudentSubmissions")
@@ -166,25 +173,30 @@ model ClassGroup {
 // ---------------------------------------------------------------------------
 
 model Dictation {
-  id            String  @id @default(cuid())
-  title         String
-  targetRule    String
-  gradeLevel    String
-  rawText       String  @db.Text
+  id             String  @id @default(cuid())
+  title          String
+  targetRule     String
+  // Habilitat concreta dins de la regla ("accentuacio.agudes"). Quan hi es, es
+  // ella qui rep el resultat del dictat; si no, el rep la regla sencera.
+  targetSubskill String?
+  gradeLevel     String
+  rawText        String  @db.Text
   // El docent ha demanat locucio generada per a aquest dictat. L'audio en si
   // no viu aqui: veure DictationAudio.
-  wantsAudio    Boolean @default(false)
+  wantsAudio     Boolean @default(false)
   // Quin servei ha locutat el dictat l'ultim cop: "gemini", "openai" o
   // "browser" (veu del navegador, quan cap servei estava disponible).
-  audioSource   String?
-  isAIGenerated Boolean @default(true)
+  audioSource    String?
+  isAIGenerated  Boolean @default(true)
 
   // Com vol el docent que l'alumne escolti aquest dictat:
   // { defaultSpeed: number, maxRepetitions: number|null, forceHiddenScreen: boolean }
   playbackSettings Json?
 
-  teacherId String
-  teacher   User   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  /// Buit quan el dictat se l'ha generat una persona que aprèn pel seu
+  /// compte: no hi ha cap docent al darrere, i el dictat és seu.
+  teacherId String?
+  teacher   User?   @relation("DictationTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
 
   classGroupId String?
   classGroup   ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
@@ -247,11 +259,86 @@ model Submission {
   score         Float?
   status        SubmissionStatus @default(PENDING)
 
+  overrides TeacherOverride[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([dictationId])
   @@index([studentId])
+}
+
+/// Que domina un alumne de cada habilitat ortografica, i com de segurs n'estem.
+///
+/// Es podria recalcular sempre des de zero llegint tot l'historial, com es feia
+/// fins ara, pero llavors el motor adaptatiu no pot saber res que no es
+/// dedueixi de les puntuacions: ni quant fa que no es practica una habilitat,
+/// ni amb quina versio de l'algorisme es va mesurar. Aixo es aquella foto,
+/// desada i datada.
+model StudentSkillState {
+  id String @id @default(cuid())
+
+  studentId String
+  student   User   @relation("StudentSkills", fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Clau de la taxonomia: "accentuacio" o "accentuacio.agudes".
+  skill String
+
+  /// Que en domina, de 0 a 1.
+  mastery    Float @default(0)
+  /// Com de fiable es aquesta mesura: puja amb evidencia recent i repetida.
+  confidence Float @default(0)
+
+  attempts Int @default(0)
+  errors   Int @default(0)
+
+  lastPracticedAt DateTime?
+
+  /// Amb quines regles es va calcular, per poder recalcular-ho tot el dia que
+  /// canviin sense confondre mesures velles amb noves.
+  algorithmVersion Int @default(1)
+  taxonomyVersion  Int @default(1)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, skill])
+  @@index([studentId])
+}
+
+/// Un docent que esmena una classificacio de la IA.
+///
+/// L'esmena s'aplica de seguida sobre la correccio desada, aixi que aquesta
+/// taula no cal per fer-la efectiva: hi es perque quedi constancia de qui va
+/// canviar que i per que. Sense aixo, d'aqui a un any ningu no sabria si una
+/// correccio la va decidir el model o una persona.
+model TeacherOverride {
+  id String @id @default(cuid())
+
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  teacherId String
+  teacher   User   @relation("OverridesByTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  /// Posicio de l'errada dins de correctedData.errors.
+  errorIndex Int
+
+  /// "invalidar" (no era cap errada) o "reclassificar" (era d'una altra regla).
+  action String
+
+  /// Habilitat correcta, quan l'accio es reclassificar.
+  newSkill String?
+
+  /// Que hi havia abans, per poder desfer-ho i per saber que va canviar.
+  previousSkill String?
+
+  /// Per que ho canvia. Obligatori: una esmena sense motiu no s'enten despres.
+  reason String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([submissionId])
+  @@index([teacherId])
 }
 
 model ImprovementReport {

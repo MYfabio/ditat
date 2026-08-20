@@ -4,12 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
 import { getOrCreateDictationAudio } from "@/lib/ai/dictation-audio";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
+import { isKnownSkill } from "@/lib/skill-taxonomy";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const {
     gradeLevel,
     targetRule,
+    targetSubskill,
     neeAdaptation,
     classGroupId,
     preview,
@@ -18,6 +20,7 @@ export async function POST(req: Request) {
   } = body as {
     gradeLevel?: string;
     targetRule?: string;
+    targetSubskill?: string | null;
     neeAdaptation?: "cap" | "tdah" | "dislexia";
     classGroupId?: string;
     preview?: boolean;
@@ -32,9 +35,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Una subhabilitat que no es del catàleg no es fa servir: el text es
+  // generaria demanant una cosa que no vol dir res.
+  const subskill = targetSubskill && isKnownSkill(targetSubskill) ? targetSubskill : null;
+
   const { text, title, mocked } = await generateDictationText({
     gradeLevel,
     targetRule,
+    targetSubskill: subskill,
     neeAdaptation,
   });
 
@@ -55,6 +63,7 @@ export async function POST(req: Request) {
       data: {
         title,
         targetRule,
+        targetSubskill: subskill,
         gradeLevel,
         rawText: text,
         wantsAudio: !!withAudio,

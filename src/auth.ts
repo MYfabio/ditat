@@ -31,6 +31,14 @@ async function matchSchoolByDomain(email: string) {
   }
 }
 
+/**
+ * Si algu sense centre es pot donar d'alta pel seu compte per preparar-se una
+ * certificacio. Un desplegament nomes per a escoles ho pot tancar posant-hi
+ * "false".
+ */
+const SELF_LEARNERS_ALLOWED =
+  (process.env.AUTH_ALLOW_SELF_LEARNERS ?? "true").toLowerCase() !== "false";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -105,11 +113,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     /**
      * Qui pot entrar amb SSO. Sense aquest filtre, qualsevol persona amb un
      * compte de Google es podria donar d'alta en un sistema que conté dades
-     * de menors. Només s'hi accepta:
+     * de menors. S'hi accepta:
      *   - correus del domini d'un centre registrat,
      *   - usuaris que ja existeixen (importats per CSV o donats d'alta abans),
      *   - dominis autoritzats explícitament (AUTH_ALLOWED_DOMAINS), pensat per
-     *     a l'equip que administra la plataforma.
+     *     a l'equip que administra la plataforma,
+     *   - qualsevol persona que vulgui aprendre pel seu compte, si el desplegament
+     *     ho permet (AUTH_ALLOW_SELF_LEARNERS).
+     *
+     * Aquest últim cas no obre cap porta a les dades de cap centre: qui entra
+     * així es queda sense escola i sense grup, i totes les consultes van
+     * filtrades per escola, grup o pel propi identificador. El que sí que obre
+     * és la porta a donar-se d'alta sense invitació, i per això es pot tancar.
      */
     async signIn({ user }) {
       const email = user.email?.toLowerCase();
@@ -128,6 +143,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           prisma.user.findUnique({ where: { email }, select: { id: true } }),
         ]);
         if (school || existing) return true;
+        if (SELF_LEARNERS_ALLOWED) return true;
         // Auth.js mostra aquest codi a /login?error=...
         return "/login?error=CentreNoRegistrat";
       } catch {

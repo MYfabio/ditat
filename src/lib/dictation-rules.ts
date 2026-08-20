@@ -27,11 +27,44 @@ export const ORTHOGRAPHIC_RULES = [
   { value: "dieresi", label: "La dièresi (u, gu, qu)", expectedFrom: "6-primaria" },
 ] as const;
 
+/**
+ * Nivells del Marc europeu, per a qui es prepara pel seu compte una
+ * certificacio i no cursa cap curs escolar.
+ *
+ * Van a part dels cursos i no els substitueixen: un adult que es presenta al
+ * C1 no es un alumne de 4t d'ESO, encara que el curriculum els demani coses
+ * semblants. `equivalentGrade` nomes serveix per saber quines regles se li
+ * suposen apreses, que es l'unic on les dues escales s'han de tocar.
+ */
+export const MCER_LEVELS = [
+  { value: "A1", label: "A1 (inicial)", equivalentGrade: "2-primaria" },
+  { value: "A2", label: "A2 (basic)", equivalentGrade: "4-primaria" },
+  { value: "B1", label: "B1 (llindar)", equivalentGrade: "6-primaria" },
+  { value: "B2", label: "B2 (avancat)", equivalentGrade: "2-eso" },
+  { value: "C1", label: "C1 (domini funcional)", equivalentGrade: "4-eso" },
+  { value: "C2", label: "C2 (mestratge)", equivalentGrade: "4-eso" },
+] as const;
+
+export type McerLevelValue = (typeof MCER_LEVELS)[number]["value"];
+
+/** El curs escolar equivalent a un nivell, per mesurar-hi el curriculum. */
+export function curriculumGradeFor(level: string) {
+  return MCER_LEVELS.find((l) => l.value === level)?.equivalentGrade ?? level;
+}
+
+export function isMcerLevel(level: string): level is McerLevelValue {
+  return MCER_LEVELS.some((l) => l.value === level);
+}
+
 export type GradeLevelValue = (typeof GRADE_LEVELS)[number]["value"];
 export type OrthographicRuleValue = (typeof ORTHOGRAPHIC_RULES)[number]["value"];
 
 export function gradeLabel(value: string) {
-  return GRADE_LEVELS.find((g) => g.value === value)?.label ?? value;
+  return (
+    GRADE_LEVELS.find((g) => g.value === value)?.label ??
+    MCER_LEVELS.find((l) => l.value === value)?.label ??
+    value
+  );
 }
 
 export function ruleLabel(value: string) {
@@ -39,7 +72,7 @@ export function ruleLabel(value: string) {
 }
 
 export function gradeIndex(value: string) {
-  return GRADE_LEVELS.findIndex((g) => g.value === value);
+  return GRADE_LEVELS.findIndex((g) => g.value === curriculumGradeFor(value));
 }
 
 // Llargada recomanada del dictat per etapa educativa (en paraules).
@@ -78,7 +111,31 @@ export const TEXT_LENGTH_BY_CYCLE = [
   },
 ] as const;
 
+/**
+ * Llargada per a qui es prepara una certificacio. No es la del curs
+ * equivalent: un adult de nivell A2 llegeix i escriu mes de pressa que un nen
+ * de 4t, encara que ortograficament se li demani el mateix.
+ */
+export const TEXT_LENGTH_BY_MCER: Record<string, { min: number; max: number }> = {
+  A1: { min: 30, max: 50 },
+  A2: { min: 50, max: 80 },
+  B1: { min: 80, max: 110 },
+  B2: { min: 110, max: 140 },
+  C1: { min: 140, max: 180 },
+  C2: { min: 170, max: 220 },
+};
+
 export function lengthForGrade(gradeLevel: string) {
+  const mcer = TEXT_LENGTH_BY_MCER[gradeLevel];
+  if (mcer) {
+    const level = MCER_LEVELS.find((l) => l.value === gradeLevel);
+    return {
+      ...mcer,
+      cycle: level?.label ?? gradeLevel,
+      ages: "preparacio de certificacio",
+      guidance: "Text per a persona adulta que es prepara aquest nivell.",
+    };
+  }
   return (
     TEXT_LENGTH_BY_CYCLE.find((c) => (c.grades as readonly string[]).includes(gradeLevel)) ??
     TEXT_LENGTH_BY_CYCLE[1]
