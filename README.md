@@ -58,4 +58,6 @@ Google/Microsoft SSO, Anthropic, Google Cloud Vision, OpenAI).
 - `src/app/student` — Espai de l'Alumnat (amb adaptacions NEE)
 - `src/app/api/dictations/generate` — Generacio de dictats amb IA
 - `src/app/api/submissions/upload` — OCR + avaluacio de fotos de dictats
+- `src/app/api/submissions/[id]/photo` — Foto d'una entrega, per corregir-la a sobre
+- `src/lib/annotations.ts` — Converteix els errors en marques (subratllats, tildes, intercalacions)
 - `prisma/schema.prisma` — Esquema multi-tenant (School, User, ClassGroup, Dictation, Submission, ImprovementReport)

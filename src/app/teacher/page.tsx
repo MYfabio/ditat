@@ -16,9 +16,14 @@ import { createOwnClassGroup, addStudentToOwnGroup } from "./actions";
 import { JoinCodeCard, type GroupWithCode } from "./join-code-card";
 import { ruleLabel, GRADE_LEVELS } from "@/lib/dictation-rules";
 import { parseNeedsProfile } from "@/lib/needs-profile";
+import type { Annotation } from "@/lib/annotations";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
-type CorrectedData = { errors?: EvaluationError[]; feedback?: string } | null;
+type CorrectedData = {
+  errors?: EvaluationError[];
+  feedback?: string;
+  annotations?: Annotation[];
+} | null;
 
 async function loadTeacherData(
   teacherId: string,
@@ -46,7 +51,15 @@ async function loadTeacherData(
       }),
       prisma.dictation.findMany({
         where: { teacherId },
-        include: { submissions: { include: { student: true } } },
+        include: {
+          submissions: {
+            // `photoUrl` es queda fora a proposit: son fotos senceres en base64
+            // i aqui n'hi ha prou amb saber si n'hi ha, que la imatge ja se
+            // serveix a part quan el docent obre una entrega.
+            omit: { photoUrl: true },
+            include: { student: true },
+          },
+        },
         orderBy: { createdAt: "desc" },
       }),
       prisma.user.findMany({
@@ -95,6 +108,8 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
             createdAt: s.createdAt.toISOString(),
             errors: corrected?.errors ?? [],
             feedback: corrected?.feedback ?? null,
+            hasPhoto: s.inputMethod === "PHOTO",
+            annotations: corrected?.annotations ?? [],
           };
         })
       )

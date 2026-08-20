@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye } from "lucide-react";
+import { AnnotatedPhoto } from "@/components/dashboard/annotated-photo";
+import type { Annotation } from "@/lib/annotations";
 
 export type ReviewSubmission = {
   id: string;
@@ -25,6 +27,10 @@ export type ReviewSubmission = {
   createdAt: string;
   errors: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
   feedback: string | null;
+  /** L'entrega venia amb foto i se'n pot demanar la imatge per corregir-la. */
+  hasPhoto: boolean;
+  /** Subratllats, titlles i intercalacions situats sobre la foto. */
+  annotations: Annotation[];
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -96,6 +102,22 @@ export function SubmissionReviewer({ submissions }: { submissions: ReviewSubmiss
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {selected.hasPhoto && (
+              <div>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  Dictat de l&apos;alumne/a amb les marques de correcció
+                </p>
+                <AnnotatedPhoto
+                  // La clau reinicia el component en canviar d'entrega: sense
+                  // això es quedaria la proporció de la foto anterior.
+                  key={selected.id}
+                  src={`/api/submissions/${selected.id}/photo`}
+                  annotations={selected.annotations}
+                  alt={`Dictat de ${selected.studentName} amb les correccions`}
+                />
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Text original</p>

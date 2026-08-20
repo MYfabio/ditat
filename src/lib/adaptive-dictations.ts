@@ -9,6 +9,28 @@ import {
 } from "@/lib/needs-profile";
 
 /**
+ * Munta el perfil d'aprenentatge a partir de l'historial, sense desar res.
+ *
+ * Es fa servir per llegir com estava l'alumne abans de corregir-li un dictat,
+ * per poder-li dir despres en que ha millorat.
+ */
+export async function loadLearningProfile(studentId: string): Promise<LearningProfile | null> {
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    include: { classGroup: true },
+  });
+  if (!student) return null;
+
+  const submissions = await prisma.submission.findMany({
+    where: { studentId },
+    include: { dictation: { select: { targetRule: true, gradeLevel: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return buildLearningProfile(submissions, student.classGroup?.gradeLevel ?? "4-primaria");
+}
+
+/**
  * Recalcula el perfil d'aprenentatge d'un alumne a partir de tot el seu
  * historial, el desa com a ImprovementReport i li deixa preparat el següent
  * dictat personalitzat centrat en la seva regla més fluixa.

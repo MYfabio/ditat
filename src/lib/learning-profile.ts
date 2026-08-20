@@ -1,4 +1,9 @@
-import { ORTHOGRAPHIC_RULES, rulesExpectedAt, type OrthographicRuleValue } from "@/lib/dictation-rules";
+import {
+  ORTHOGRAPHIC_RULES,
+  rulesExpectedAt,
+  ruleLabel,
+  type OrthographicRuleValue,
+} from "@/lib/dictation-rules";
 
 export type SubmissionForProfile = {
   score: number | null;
@@ -208,4 +213,41 @@ export function buildLearningProfile(
 
 export function isKnownRule(rule: string): rule is OrthographicRuleValue {
   return ORTHOGRAPHIC_RULES.some((r) => r.value === rule);
+}
+
+/**
+ * Frase de progres per a l'alumne, comparant el perfil d'abans d'aquest dictat
+ * amb el d'ara.
+ *
+ * Es diu nomes quan hi ha una millora concreta que es pot assenyalar: si no hi
+ * ha res clar, val mes no dir res que felicitar per res.
+ */
+export function progressNote(
+  before: LearningProfile,
+  after: LearningProfile,
+  ruleJustPractised: string
+): string | null {
+  // Sense historial previ no hi ha res amb que comparar: es el primer dictat.
+  if (before.totalSubmissions === 0) return null;
+
+  const wasMastered = new Set(before.perRule.filter((r) => r.mastered).map((r) => r.rule));
+  const newlyMastered = after.perRule
+    .filter((r) => r.mastered && !wasMastered.has(r.rule))
+    .map((r) => ruleLabel(r.rule));
+
+  if (newlyMastered.length) {
+    return `Ja pots donar per apresa la regla ${newlyMastered.join(" i ")}: fa dos dictats seguits que la fas bé.`;
+  }
+
+  const previous = before.perRule.find((r) => r.rule === ruleJustPractised);
+  const current = after.perRule.find((r) => r.rule === ruleJustPractised);
+  if (previous && current && current.averageScore > previous.averageScore) {
+    return `Has fet menys errades de ${ruleLabel(ruleJustPractised)} que en els dictats anteriors. Vas pel bon camí.`;
+  }
+
+  if (after.averageScore > before.averageScore) {
+    return "Aquest dictat t'ha sortit millor que la teva mitjana. Continua així.";
+  }
+
+  return null;
 }
