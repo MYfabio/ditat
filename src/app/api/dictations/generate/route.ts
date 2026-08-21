@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateDictationText } from "@/lib/ai/generate-dictation";
 import { getOrCreateDictationAudio } from "@/lib/ai/dictation-audio";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
+import { comprovaLimit, TOPALLS, quantFalta } from "@/lib/rate-limit";
 import { isKnownSkill } from "@/lib/skill-taxonomy";
 
 export async function POST(req: Request) {
@@ -54,6 +55,18 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "TEACHER" && session.user.role !== "SUPERADMIN")) {
     return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
+  }
+
+  // Generar text i veu es paga a Google. El topall no atura ningu que treballi
+  // de debo, pero si un bucle o una pestanya que es queda prement el boto.
+  const limit = comprovaLimit(`dictat:${session.user.id}`, TOPALLS.generarDictat);
+  if (!limit.permes) {
+    return NextResponse.json(
+      {
+        error: `Has generat molts dictats avui. Podras tornar-ne a generar d'aqui a ${quantFalta(limit.reiniciaEn)}.`,
+      },
+      { status: 429 }
+    );
   }
 
   // El grup arriba del navegador, aixi que cal comprovar que es d'aquest

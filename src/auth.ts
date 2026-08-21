@@ -47,7 +47,16 @@ const SELF_LEARNERS_ALLOWED =
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    // Una jornada escolar llarga. Per defecte Auth.js dona trenta dies, i als
+    // ordinadors compartits de l'aula aixo vol dir que qui no prem "Sortir"
+    // deixa la sessio viva un mes i el seguent alumne hi entra amb el seu
+    // compte. Passat aquest temps cal tornar a entrar.
+    maxAge: 12 * 60 * 60,
+    // Mentre s'esta treballant, la sessio es va renovant sola.
+    updateAge: 60 * 60,
+  },
   // Necessari darrere de proxys com Railway/Fly.io, que no son autodetectats per Auth.js.
   trustHost: true,
   pages: {

@@ -8,6 +8,7 @@ import { classifyErrors, CLASSIFIER_VERSION } from "@/lib/error-classification";
 import { countWords } from "@/lib/dictation-rules";
 import { loadLearningProfile, refreshLearningProfile } from "@/lib/adaptive-dictations";
 import { progressNote } from "@/lib/learning-profile";
+import { comprovaLimit, TOPALLS, quantFalta } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -23,6 +24,18 @@ export async function POST(req: Request) {
   };
 
   const typed = typedText?.trim();
+
+  // Corregir es paga: OCR de la foto i despres el model que compara. Mateix
+  // motiu que a la generacio de dictats.
+  const limit = comprovaLimit(`entrega:${session.user.id}`, TOPALLS.entregar);
+  if (!limit.permes) {
+    return NextResponse.json(
+      {
+        error: `Has enviat moltes entregues avui. Podras tornar-ho a provar d'aqui a ${quantFalta(limit.reiniciaEn)}.`,
+      },
+      { status: 429 }
+    );
+  }
 
   // Una foto de mobil ronda els 2-4 MB en base64. El limit deixa passar les
   // fotos de debo i atura que algu ompli la base de dades enviant fitxers
