@@ -20,7 +20,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold">Benvingut/da</h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          Accedeix amb el compte del teu centre educatiu.
+          Amb el compte del teu centre educatiu, o amb un enllaç al teu correu.
         </p>
         <Suspense fallback={<div className="h-40" />}>
           <LoginError />

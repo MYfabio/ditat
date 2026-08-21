@@ -72,7 +72,6 @@ export function SSOButtons({
     <div className="flex flex-col gap-3">
       {hasGoogle && (
         <Button
-          variant="outline"
           size="lg"
           disabled={loadingProvider !== null}
           onClick={() => {
@@ -188,8 +187,16 @@ export function EmailLoginForm() {
           placeholder="nom@escola.cat"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          aria-describedby="ajuda-email"
           required
         />
+        {/* Dir la norma no revela res: no diu si una adreça concreta existeix,
+            nomes que ha de ser la del centre. Sense aixo, qui hi posa el seu
+            correu personal es queda esperant un correu que no arribara mai. */}
+        <p id="ajuda-email" className="text-xs text-muted-foreground">
+          Ha de ser el correu del teu centre. T&apos;enviarem un enllaç per entrar:
+          no cal cap contrasenya.
+        </p>
       </div>
       <Button type="submit" variant="outline" size="lg" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" /> : <Mail className="size-4" />}
