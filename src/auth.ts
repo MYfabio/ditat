@@ -204,12 +204,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (!token.id) return token;
 
-      // El token que es construeix en iniciar sessió pot quedar desfasat: amb
-      // SSO, l'escola s'assigna just després de crear l'usuari, i el grup
-      // classe se sol assignar dies més tard. Mentre falti alguna d'aquestes
-      // dades es rellegeix el perfil real; un cop completes, no es torna a
-      // consultar la base de dades a cada petició.
-      const needsRefresh = !!user || !token.schoolId || !token.classGroupId;
+      // El token es fa en iniciar sessió i despres viatja amb cada peticio, aixi
+      // que envelleix. Abans nomes es rellegia el perfil mentre faltes l'escola
+      // o el grup, i per tant qui ja tenia les dues coses es quedava amb el rol
+      // congelat fins que la sessio caducava: canviar algu de alumne a docent no
+      // tenia cap efecte visible, i qui mirava el panell veia el rol antic i
+      // pensava que el canvi no s'havia desat.
+      //
+      // Ara es rellegeix cada cinc minuts. Es una consulta per index i per
+      // persona cada cinc minuts, i a canvi qualsevol canvi de rol, de grup o
+      // de centre arriba sol sense haver de tancar la sessio.
+      const REFRESC_MS = 5 * 60 * 1000;
+      const ultim = typeof token.refreshedAt === "number" ? token.refreshedAt : 0;
+      const needsRefresh = !!user || Date.now() - ultim > REFRESC_MS;
       if (!needsRefresh) return token;
 
       try {
@@ -217,7 +224,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: token.id as string },
           select: { id: true, email: true, role: true, schoolId: true, classGroupId: true },
         });
-        if (!profile) return token;
+        // L'usuari ja no existeix: algu l'ha esborrat mentre tenia la sessio
+        // oberta. Retornar null tanca la sessio, en lloc de deixar-lo navegant
+        // amb un token d'un compte que ja no hi es.
+        if (!profile) return null;
 
         // També empara el cas que el centre es registri després que l'usuari
         // hagi entrat per primer cop.
@@ -235,6 +245,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = profile.role;
         token.schoolId = profile.schoolId;
         token.classGroupId = profile.classGroupId;
+        token.refreshedAt = Date.now();
       } catch {
         // Sense base de dades disponible es conserva el que ja tingui el token.
       }

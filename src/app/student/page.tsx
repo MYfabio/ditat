@@ -5,7 +5,8 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DbNotice } from "@/components/dashboard/db-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DictationPlayer } from "./dictation-player";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
 import { AutonomousPanel } from "./autonomous-panel";
@@ -112,6 +113,20 @@ export default async function StudentPage() {
     (d) => d.targetStudentId !== null && !submittedIds.has(d.id)
   );
 
+  // Un dictat ja entregat no es feina pendent: nomes es historial. Separar-ho
+  // es el que permet ensenyar-li una sola cosa a fer.
+  const entregats = new Set(submissions.map((s) => s.dictationId));
+  const pendents: DictationForStudent[] = dictations
+    .filter((d) => !entregats.has(d.id))
+    .map((d) => ({
+      id: d.id,
+      title: d.title,
+      rawText: d.rawText,
+      hasAudio: d.wantsAudio,
+      personalised: !!d.targetStudentId,
+      playback: parsePlaybackSettings(d.playbackSettings),
+    }));
+
   const bestScore = submissions.reduce((max, s) => Math.max(max, s.score ?? 0), 0);
   const streak = computeStreak(submissions.map((s) => s.createdAt));
 
@@ -163,32 +178,29 @@ export default async function StudentPage() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Els meus dictats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Dos espais, no un: el que has de fer ara, i com et va anant. Barrejar
+            les dues coses feia que un dictat pendent quedes despres de quatre
+            insignies i una llista de notes. */}
+        <Tabs defaultValue="perfer" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="perfer">
+              Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="progres">El meu progres</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="perfer">
             {dictations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Encara no tens cap dictat. Si encara no ets a cap classe, apunta-t&apos;hi
-                amb el codi de més amunt.
-              </p>
+              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                Encara no tens cap dictat. Si encara no ets a cap classe,
+                apunta-t&apos;hi amb el codi de mes amunt.
+              </div>
             ) : (
-              dictations.map((d) => (
-                <DictationPlayer
-                  key={d.id}
-                  dictationId={d.id}
-                  title={d.title}
-                  rawText={d.rawText}
-                  audioUrl={d.wantsAudio ? `/api/dictations/${d.id}/audio` : null}
-                  personalised={!!d.targetStudentId}
-                  sentencesPerChunk={sentencesPerChunk(needs)}
-                  playback={parsePlaybackSettings(d.playbackSettings)}
-                />
-              ))
+              <DictationQueue pending={pendents} sentencesPerChunk={sentencesPerChunk(needs)} />
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="progres" className="space-y-6">
 
         <Card>
           <CardHeader>
@@ -272,6 +284,8 @@ export default async function StudentPage() {
             </CardContent>
           </Card>
         )}
+        </TabsContent>
+        </Tabs>
       </main>
     </>
   );
