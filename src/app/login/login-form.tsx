@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -34,7 +34,9 @@ const ERROR_MESSAGES: Record<string, string> = {
     "La comprovació amb Google ha caducat o s'ha reintentat des d'una pestanya antiga. Torna-ho a provar des d'aquí i completa'l sense deixar-lo a mitges. Si continua fallant, tanca totes les pestanyes de dictats.cat i comença de nou.",
   OAuthAccountNotLinked:
     "Aquest correu ja existeix a dictats.cat però amb un altre mètode d'accés. Avisa la persona que administra la plataforma.",
-  Verification: "L'enllaç d'accés ja no és vàlid. Torna a iniciar sessió.",
+  Verification:
+    "Aquest enllaç d'accés ja no és vàlid: o bé ha caducat, o bé ja s'havia fet servir. Demana'n un de nou aquí sota.",
+  EmailSignin: "No s'ha pogut enviar el correu d'accés. Torna-ho a provar d'aquí a una estona.",
 };
 
 export function LoginError() {
@@ -105,6 +107,95 @@ export function SSOButtons({
         </Button>
       )}
     </div>
+  );
+}
+
+/**
+ * Accés per enllaç al correu, per a qui no fa servir un compte de Google.
+ *
+ * No demana contrasenya a propòsit: no n'hi ha cap de desada, i per tant no hi
+ * ha res a recuperar ni res que es pugui filtrar. Rebre el correu ja és la
+ * comprovació que l'adreça és de qui diu ser.
+ */
+export function EmailLoginForm() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [enviat, setEnviat] = useState(false);
+
+  if (enviat) {
+    return (
+      <div className="rounded-md border border-primary/40 bg-primary/5 p-4">
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div className="space-y-1 text-sm">
+            <p className="font-medium">Mira el teu correu</p>
+            <p className="text-muted-foreground">
+              Si <strong className="text-foreground">{email}</strong> pertany a un centre
+              donat d&apos;alta, hi trobaràs un enllaç per entrar. Caduca en dues hores.
+            </p>
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={() => setEnviat(false)}
+            >
+              Provar amb una altra adreça
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Escriu el teu correu electrònic.");
+      return;
+    }
+    setLoading(true);
+    const result = await signIn("resend", {
+      email: email.trim().toLowerCase(),
+      redirect: false,
+      callbackUrl,
+    });
+    setLoading(false);
+
+    // "AccessDenied" vol dir que aquesta adreça no pot entrar. No es diu: es
+    // mostra la mateixa confirmació que si s'hagués enviat, perquè si no,
+    // qualsevol podria anar provant adreces per saber quines existeixen al
+    // sistema. El text de la confirmació ja ho deixa clar sense mentir: "si
+    // pertany a un centre donat d'alta, hi trobaràs un enllaç".
+    //
+    // La resta d'errors sí que es diuen: són avaries de debò, i callar-les
+    // deixaria la persona esperant un correu que no arribarà mai.
+    if (result?.error && result.error !== "AccessDenied") {
+      toast.error("No s'ha pogut enviar el correu. Torna-ho a provar.");
+      return;
+    }
+    setEnviat(true);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div className="grid gap-2">
+        <Label htmlFor="email-acces">Correu electrònic</Label>
+        <Input
+          id="email-acces"
+          type="email"
+          autoComplete="email"
+          placeholder="nom@escola.cat"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <Button type="submit" variant="outline" size="lg" disabled={loading}>
+        {loading ? <Loader2 className="animate-spin" /> : <Mail className="size-4" />}
+        Enviar-me un enllaç d&apos;accés
+      </Button>
+    </form>
   );
 }
 

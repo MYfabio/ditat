@@ -2,13 +2,18 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Credentials from "next-auth/providers/credentials";
+import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
+import { sendMagicLink, MAGIC_LINK_MAX_AGE } from "@/lib/auth-email";
 
 const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
 const hasMicrosoft =
   !!process.env.AUTH_MICROSOFT_ENTRA_ID_ID && !!process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
+// Accés per enllaç al correu, per a qui no vol (o no pot) fer servir un compte
+// de Google. Sense clau de Resend no hi ha manera d'enviar-lo, i el botó no surt.
+const hasEmailLogin = !!process.env.AUTH_RESEND_KEY;
 
 // L'acces de prova permet triar qualsevol rol (incloent SUPERADMIN) sense
 // contrasenya: només pot existir en desenvolupament. En un desplegament públic
@@ -17,6 +22,7 @@ const hasMicrosoft =
 export const demoLoginEnabled =
   !hasGoogle &&
   !hasMicrosoft &&
+  !hasEmailLogin &&
   (process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_LOGIN === "true");
 
 // Emparellament per domini: si el correu de l'usuari coincideix amb el domini
@@ -65,6 +71,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
             clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
             issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+          }),
+        ]
+      : []),
+    ...(hasEmailLogin
+      ? [
+          Resend({
+            apiKey: process.env.AUTH_RESEND_KEY,
+            // Ha de ser una adreça d'un domini verificat a Resend, o els
+            // correus no surten.
+            from: process.env.AUTH_EMAIL_FROM || "dictats.cat <no-reply@dictats.cat>",
+            maxAge: MAGIC_LINK_MAX_AGE,
+            sendVerificationRequest: sendMagicLink,
           }),
         ]
       : []),
@@ -127,10 +145,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      * és la porta a donar-se d'alta sense invitació, i per això es pot tancar.
      */
     async signIn({ user }) {
-      const email = user.email?.toLowerCase();
-      if (!email) return false;
+      // Amb l'enllaç per correu, Auth.js crida aquesta comprovació dues
+      // vegades: abans d'enviar l'enllaç i quan es prem. Que valgui també per
+      // al primer pas és el que evita enviar un enllaç a una adreça que
+      // després rebutjaríem.
+      const emailLower = user.email?.toLowerCase();
+      if (!emailLower) return false;
 
-      const domain = email.split("@")[1];
+      const domain = emailLower.split("@")[1];
       const allowlist = (process.env.AUTH_ALLOWED_DOMAINS ?? "")
         .split(",")
         .map((d) => d.trim().toLowerCase())
@@ -139,8 +161,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       try {
         const [school, existing] = await Promise.all([
-          matchSchoolByDomain(email),
-          prisma.user.findUnique({ where: { email }, select: { id: true } }),
+          matchSchoolByDomain(emailLower),
+          prisma.user.findUnique({ where: { email: emailLower }, select: { id: true } }),
         ]);
         if (school || existing) return true;
         if (SELF_LEARNERS_ALLOWED) return true;

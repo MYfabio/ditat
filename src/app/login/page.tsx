@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
-import { SSOButtons, DevMockLoginForm, LoginError } from "./login-form";
+import { SSOButtons, EmailLoginForm, DevMockLoginForm, LoginError } from "./login-form";
 import { demoLoginEnabled } from "@/auth";
 
 export default function LoginPage() {
@@ -9,6 +9,7 @@ export default function LoginPage() {
   const hasMicrosoft =
     !!process.env.AUTH_MICROSOFT_ENTRA_ID_ID && !!process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
   const hasSSO = hasGoogle || hasMicrosoft;
+  const hasEmailLogin = !!process.env.AUTH_RESEND_KEY;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-16">
@@ -25,8 +26,18 @@ export default function LoginPage() {
           <LoginError />
         </Suspense>
         <Suspense fallback={<div className="h-40" />}>
-          {hasSSO ? (
-            <SSOButtons hasGoogle={hasGoogle} hasMicrosoft={hasMicrosoft} />
+          {hasSSO || hasEmailLogin ? (
+            <div className="space-y-4">
+              {hasSSO && <SSOButtons hasGoogle={hasGoogle} hasMicrosoft={hasMicrosoft} />}
+              {hasSSO && hasEmailLogin && (
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">o bé</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+              )}
+              {hasEmailLogin && <EmailLoginForm />}
+            </div>
           ) : demoLoginEnabled ? (
             <DevMockLoginForm />
           ) : (
