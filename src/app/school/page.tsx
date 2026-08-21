@@ -18,7 +18,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CsvImportForm } from "./csv-import-form";
-import { createClassGroup, assignStudentToClass, updateNeePresets, removeTeacherFromSchool } from "./actions";
+import {
+  createClassGroup,
+  assignStudentToClass,
+  updateNeePresets,
+  removeTeacherFromSchool,
+  removeStudentFromSchool,
+  updateSchoolUserRole,
+} from "./actions";
 import { deleteClassGroup } from "../teacher/actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { FilterBar } from "@/components/dashboard/filter-bar";
@@ -141,8 +148,18 @@ export default async function SchoolPage(props: PageProps<"/school">) {
               />
 
               <div className="mt-6 grid gap-6 md:grid-cols-2">
-                <UsersTable title="Docents" users={data.dbAvailable ? data.teachers : []} removable />
-                <UsersTable title="Alumnat" users={data.dbAvailable ? data.students : []} />
+                <UsersTable
+                  title="Docents"
+                  users={data.dbAvailable ? data.teachers : []}
+                  removable
+                  kind="teacher"
+                />
+                <UsersTable
+                  title="Alumnat"
+                  users={data.dbAvailable ? data.students : []}
+                  removable
+                  kind="student"
+                />
               </div>
             </TabsContent>
 
@@ -346,10 +363,13 @@ function UsersTable({
   title,
   users,
   removable = false,
+  kind = "teacher",
 }: {
   title: string;
   users: { id: string; name: string | null; email: string }[];
   removable?: boolean;
+  /** Treure un docent allibera els seus grups; treure un alumne, no. */
+  kind?: "teacher" | "student";
 }) {
   return (
     <Card>
@@ -370,11 +390,40 @@ function UsersTable({
                 <span className="min-w-0 flex-1 truncate">{u.name || "-"}</span>
                 <span className="min-w-0 flex-1 truncate text-muted-foreground">{u.email}</span>
                 {removable && (
-                  <form action={removeTeacherFromSchool}>
-                    <input type="hidden" name="teacherId" value={u.id} />
+                  <form action={updateSchoolUserRole} className="flex items-center gap-1">
+                    <input type="hidden" name="userId" value={u.id} />
+                    <select
+                      name="role"
+                      defaultValue={kind === "teacher" ? "TEACHER" : "STUDENT"}
+                      aria-label={`Rol de ${u.name || u.email}`}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="TEACHER">Docent</option>
+                      <option value="STUDENT">Alumne/a</option>
+                    </select>
+                    <Button type="submit" size="sm" variant="ghost">
+                      Desar
+                    </Button>
+                  </form>
+                )}
+                {removable && (
+                  <form action={kind === "teacher" ? removeTeacherFromSchool : removeStudentFromSchool}>
+                    <input
+                      type="hidden"
+                      name={kind === "teacher" ? "teacherId" : "studentId"}
+                      value={u.id}
+                    />
                     <ConfirmButton
                       size="icon-sm"
-                      message={`Vols treure ${u.name || u.email} del centre?\n\nPerdrà l'accés i els seus grups es quedaran sense tutor/a, però ni els seus dictats ni les entregues de l'alumnat s'esborren.`}
+                      message={
+                        kind === "teacher"
+                          ? `Vols treure ${u.name || u.email} del centre?
+
+Perdrà l'accés i els seus grups es quedaran sense tutor/a, però ni els seus dictats ni les entregues de l'alumnat s'esborren.`
+                          : `Vols treure ${u.name || u.email} del centre?
+
+Perdrà l'accés i sortirà del seu grup, però les seves entregues i correccions es conserven.`
+                      }
                     >
                       {""}
                     </ConfirmButton>

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
-import { createSchool, updateUserRole, deleteSchool } from "./actions";
+import { createSchool, updateUserRole, deleteSchool, deleteUser } from "./actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 
@@ -183,6 +183,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                       <TableHead>Rol</TableHead>
                       <TableHead>Centre</TableHead>
                       <TableHead />
+                                         <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -228,11 +229,27 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                               </Button>
                             </form>
                           </TableCell>
+                          <TableCell className="text-right">
+                            {/* Treure algu d'un centre el deixa existint sense escola.
+                                Esborrar-lo de debo nomes es pot fer des d'aqui, i cal
+                                per al dret de supressio del RGPD. */}
+                            <form action={deleteUser }>
+                              <input type="hidden" name="userId" value={u.id} />
+                              <ConfirmButton
+                                size="icon-sm"
+                                message={`Vols esborrar ${u.name || u.email} del tot?
+
+S'esborren el seu compte, les seves entregues i els seus informes. Els dictats que hagi fet per a una classe es conserven. Aixo no es pot desfer.`}
+                              >
+                                {""}
+                              </ConfirmButton>
+                            </form>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
                           Encara no hi ha cap usuari. Han d&apos;entrar un cop amb el seu compte.
                         </TableCell>
                       </TableRow>

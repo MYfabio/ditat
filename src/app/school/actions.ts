@@ -77,6 +77,40 @@ export async function importUsersCsv(csvText: string): Promise<CsvImportResult> 
  * però ni ell ni els seus dictats ni les entregues de l'alumnat s'esborren.
  * És el que cal quan algú pleaga o canvia de centre.
  */
+/**
+ * Canvia el rol d'algu del propi centre entre docent i alumne.
+ *
+ * Qui entra per SSO sempre es crea com a STUDENT, i fins ara nomes el
+ * superadministrador podia arreglar-ho. Aixo volia dir que un centre no podia
+ * donar d'alta els seus propis docents sense demanar-ho a fora, quan es
+ * justament la feina de la coordinacio.
+ *
+ * No es pot tocar ni SUPERADMIN ni SCHOOL_COORD: donar-se permisos per sobre
+ * dels que un te no pot ser una opcio de pantalla.
+ */
+export async function updateSchoolUserRole(formData: FormData) {
+  const coordinator = await requireCoordinator();
+
+  const userId = String(formData.get("userId") || "");
+  const role = String(formData.get("role") || "").toUpperCase() as Role;
+  if (!userId || !VALID_ROLES.includes(role)) return;
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, schoolId: true },
+  });
+  if (!target || target.schoolId !== coordinator.schoolId) return;
+  if (!VALID_ROLES.includes(target.role)) return;
+
+  // Un docent no pertany a cap grup com a alumne: si ho era, se'n surt.
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role, ...(role === "TEACHER" ? { classGroupId: null } : {}) },
+  });
+
+  revalidatePath("/school");
+}
+
 export async function removeTeacherFromSchool(formData: FormData) {
   const coordinator = await requireCoordinator();
 
@@ -96,6 +130,38 @@ export async function removeTeacherFromSchool(formData: FormData) {
   });
   await prisma.user.update({
     where: { id: teacherId },
+    data: { schoolId: null, classGroupId: null },
+  });
+
+  revalidatePath("/school");
+}
+
+/**
+ * Treu un alumne del centre.
+ *
+ * La coordinacio podia treure docents pero no alumnat, i es justament el cas
+ * que passa cada curs: qui es dona de baixa, qui es matricula en un altre
+ * centre. Es deixa fora igual que un docent (perd l'acces i el grup) i no
+ * s'esborra res del que ha fet: les entregues i les correccions es conserven,
+ * perque son l'historial academic del curs.
+ */
+export async function removeStudentFromSchool(formData: FormData) {
+  const coordinator = await requireCoordinator();
+
+  const studentId = String(formData.get("studentId") || "");
+  if (!studentId) return;
+
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: { id: true, schoolId: true, role: true },
+  });
+  // Nomes alumnat, i nomes del seu centre: per treure un docent hi ha
+  // removeTeacherFromSchool, que a mes allibera els seus grups.
+  if (!student || student.schoolId !== coordinator.schoolId) return;
+  if (student.role !== "STUDENT") return;
+
+  await prisma.user.update({
+    where: { id: studentId },
     data: { schoolId: null, classGroupId: null },
   });
 

@@ -70,3 +70,49 @@ export async function createSchool(formData: FormData) {
   await prisma.school.create({ data: { name, domain, planType } });
   revalidatePath("/admin");
 }
+
+/**
+ * Esborra un usuari del sistema sencer.
+ *
+ * La coordinacio nomes pot treure gent del seu centre: l'usuari continua
+ * existint, sense escola. Falta poder-lo esborrar de debo, que es el que
+ * demana el RGPD quan algu exerceix el dret de supressio, i tambe l'unica
+ * manera de netejar comptes creats per error.
+ *
+ * S'emporta el que es seu (entregues, informes, dictats personalitzats) via
+ * onDelete: Cascade. Els dictats que un docent va fer per a tota una classe no
+ * s'esborren: son de la classe, i esborrar-los deixaria l'alumnat sense
+ * l'enunciat del que ja ha entregat.
+ */
+export async function deleteUser(formData: FormData) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPERADMIN") {
+    throw new Error("No autoritzat.");
+  }
+
+  const userId = String(formData.get("userId") || "");
+  if (!userId) return;
+
+  // Sense aixo, un descuit deixa la plataforma sense cap superadministrador i
+  // ja no hi ha manera de tornar a entrar-hi per arreglar-ho.
+  if (userId === session.user.id) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+  if (!user) return;
+
+  if (user.role === "SUPERADMIN") {
+    const quants = await prisma.user.count({ where: { role: "SUPERADMIN" } });
+    if (quants <= 1) return;
+  }
+
+  // Els grups del docent es queden sense tutor en lloc de desapareixer amb ell.
+  await prisma.classGroup.updateMany({ where: { teacherId: userId }, data: { teacherId: null } });
+  await prisma.dictation.updateMany({ where: { teacherId: userId }, data: { teacherId: null } });
+
+  await prisma.user.delete({ where: { id: userId } });
+
+  revalidatePath("/admin");
+}
