@@ -282,8 +282,13 @@ async function preparePersonalisedDictation(
   if (pending) {
     await prisma.dictation.update({
       where: { id: pending.id },
-      data: { title, targetRule, targetSubskill, gradeLevel, rawText: text },
+      data: { title, targetRule, targetSubskill, gradeLevel, rawText: text, wantsAudio: true },
     });
+    // El text ha canviat, aixi que la locucio guardada ja no diu el mateix que
+    // hi ha escrit. Si no s'esborra, l'alumne escoltaria el dictat anterior
+    // mentre es corregeix contra el nou: tot el que escrivis contaria com a
+    // error. Es torna a generar sola al primer "Escoltar".
+    await prisma.dictationAudio.deleteMany({ where: { dictationId: pending.id } });
     return;
   }
 
@@ -298,6 +303,12 @@ async function preparePersonalisedDictation(
       gradeLevel,
       rawText: text,
       isAIGenerated: true,
+      // Sense aixo, tot el ram adaptatiu —els dictats que es demana l'alumne i
+      // els que surten d'una correccio— es quedava amb la veu del navegador,
+      // que a molts ordinadors no sap catala. La locucio no es genera ara:
+      // es fa al primer "Escoltar", aixi que un dictat que ningu no escolta
+      // no costa res.
+      wantsAudio: true,
       teacherId,
       targetStudentId: studentId,
     },
