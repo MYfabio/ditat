@@ -62,6 +62,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           Google({
             clientId: process.env.AUTH_GOOGLE_ID,
             clientSecret: process.env.AUTH_GOOGLE_SECRET,
+            // Un centre dona d'alta el seu alumnat abans que hi entri (per CSV
+            // o des del panell). Sense aixo, quan aquella persona finalment
+            // entra amb Google, Auth.js veu un usuari amb el mateix correu i
+            // cap compte de Google lligat, i ho rebutja amb
+            // OAuthAccountNotLinked: es a dir, ningu del que s'ha importat pot
+            // entrar mai.
+            //
+            // El nom del parametre espanta mes del que toca. El perill real
+            // seria un proveidor que deixes dir "soc aquest correu" sense
+            // comprovar-ho; Google el verifica, i per tant lligar per correu
+            // es tan segur com el propi Google.
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
