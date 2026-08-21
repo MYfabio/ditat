@@ -24,6 +24,25 @@ export async function POST(req: Request) {
 
   const typed = typedText?.trim();
 
+  // Una foto de mobil ronda els 2-4 MB en base64. El limit deixa passar les
+  // fotos de debo i atura que algu ompli la base de dades enviant fitxers
+  // enormes, que a mes es paguen dos cops: emmagatzematge i OCR.
+  const MIDA_MAXIMA_FOTO = 8 * 1024 * 1024;
+  if (photoDataUrl) {
+    if (!/^data:image\/(jpeg|jpg|png|webp|heic|heif);base64,/i.test(photoDataUrl)) {
+      return NextResponse.json(
+        { error: "El fitxer no sembla una imatge." },
+        { status: 400 }
+      );
+    }
+    if (photoDataUrl.length > MIDA_MAXIMA_FOTO) {
+      return NextResponse.json(
+        { error: "La imatge és massa gran. Fes-la amb menys resolució." },
+        { status: 413 }
+      );
+    }
+  }
+
   if (!dictationId || (!photoDataUrl && !typed)) {
     return NextResponse.json(
       { error: "Cal enviar una foto del dictat o el text escrit amb el teclat." },
@@ -35,6 +54,23 @@ export async function POST(req: Request) {
     const dictation = await prisma.dictation.findUnique({ where: { id: dictationId } });
     if (!dictation) {
       return NextResponse.json({ error: "Dictat no trobat." }, { status: 404 });
+    }
+
+    // Nomes es pot entregar un dictat que t'han posat a tu. Sense aixo, qui
+    // tingui un compte pot entregar contra l'identificador d'un dictat de
+    // qualsevol altre centre: es crearia una entrega penjada d'aquell dictat i,
+    // pitjor, la correccio li tornaria les paraules del text original. Es a
+    // dir, una manera de llegir els dictats d'una escola on no ets.
+    const potEntregar =
+      dictation.targetStudentId === session.user.id ||
+      (dictation.targetStudentId === null &&
+        dictation.classGroupId !== null &&
+        dictation.classGroupId === session.user.classGroupId) ||
+      // El docent que l'ha creat pot provar-lo abans de posar-lo a la classe.
+      dictation.teacherId === session.user.id ||
+      session.user.role === "SUPERADMIN";
+    if (!potEntregar) {
+      return NextResponse.json({ error: "Aquest dictat no és teu." }, { status: 403 });
     }
 
     // Com estava l'alumne abans d'aquest dictat, per poder-li dir despres en

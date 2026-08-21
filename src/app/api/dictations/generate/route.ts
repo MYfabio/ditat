@@ -56,6 +56,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
   }
 
+  // El grup arriba del navegador, aixi que cal comprovar que es d'aquest
+  // docent. Sense la comprovacio, un docent pot posar un dictat dins d'una
+  // classe d'un altre centre nomes canviant l'identificador que envia.
+  if (classGroupId) {
+    const group = await prisma.classGroup.findUnique({
+      where: { id: classGroupId },
+      select: { teacherId: true, schoolId: true },
+    });
+    const seu =
+      group &&
+      (group.teacherId === session.user.id ||
+        session.user.role === "SUPERADMIN" ||
+        (group.schoolId !== null && group.schoolId === session.user.schoolId));
+    if (!seu) {
+      return NextResponse.json({ error: "Aquest grup classe no és teu." }, { status: 403 });
+    }
+  }
+
   const settings = parsePlaybackSettings(playback);
 
   try {
