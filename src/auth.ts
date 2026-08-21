@@ -6,6 +6,7 @@ import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
+import { canAccess, matchSchoolByDomain } from "@/lib/access-rules";
 import { sendMagicLink, MAGIC_LINK_MAX_AGE } from "@/lib/auth-email";
 
 const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
@@ -24,26 +25,6 @@ export const demoLoginEnabled =
   !hasMicrosoft &&
   !hasEmailLogin &&
   (process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_LOGIN === "true");
-
-// Emparellament per domini: si el correu de l'usuari coincideix amb el domini
-// registrat d'una escola, se li assigna automaticament aquesta escola.
-async function matchSchoolByDomain(email: string) {
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return null;
-  try {
-    return await prisma.school.findUnique({ where: { domain } });
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Si algu sense centre es pot donar d'alta pel seu compte per preparar-se una
- * certificacio. Un desplegament nomes per a escoles ho pot tancar posant-hi
- * "false".
- */
-const SELF_LEARNERS_ALLOWED =
-  (process.env.AUTH_ALLOW_SELF_LEARNERS ?? "true").toLowerCase() !== "false";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -170,29 +151,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // vegades: abans d'enviar l'enllaç i quan es prem. Que valgui també per
       // al primer pas és el que evita enviar un enllaç a una adreça que
       // després rebutjaríem.
-      const emailLower = user.email?.toLowerCase();
-      if (!emailLower) return false;
+      const email = user.email?.toLowerCase();
+      if (!email) return false;
 
-      const domain = emailLower.split("@")[1];
-      const allowlist = (process.env.AUTH_ALLOWED_DOMAINS ?? "")
-        .split(",")
-        .map((d) => d.trim().toLowerCase())
-        .filter(Boolean);
-      if (domain && allowlist.includes(domain)) return true;
-
-      try {
-        const [school, existing] = await Promise.all([
-          matchSchoolByDomain(emailLower),
-          prisma.user.findUnique({ where: { email: emailLower }, select: { id: true } }),
-        ]);
-        if (school || existing) return true;
-        if (SELF_LEARNERS_ALLOWED) return true;
-        // Auth.js mostra aquest codi a /login?error=...
-        return "/login?error=CentreNoRegistrat";
-      } catch {
-        // Sense base de dades no es pot comprovar res: millor no deixar entrar.
-        return false;
-      }
+      const decision = await canAccess(email);
+      if (decision.allowed) return true;
+      if (decision.reason === "db-down") return false;
+      // Auth.js mostra aquest codi a /login?error=...
+      return "/login?error=CentreNoRegistrat";
     },
 
     async jwt({ token, user }) {

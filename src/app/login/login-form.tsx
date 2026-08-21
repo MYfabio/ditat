@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { registerWithEmail } from "./actions";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -110,15 +111,21 @@ export function SSOButtons({
 }
 
 /**
- * Accés per enllaç al correu, per a qui no fa servir un compte de Google.
+ * Accés per enllaç al correu, amb alta de nom i cognoms.
  *
  * No demana contrasenya a propòsit: no n'hi ha cap de desada, i per tant no hi
  * ha res a recuperar ni res que es pugui filtrar. Rebre el correu ja és la
  * comprovació que l'adreça és de qui diu ser.
+ *
+ * L'alta sí que demana nom i cognoms, perquè l'enllaç sol no els recull i el
+ * docent es trobava un correu sense persona a la llista de classe.
  */
 export function EmailLoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const [mode, setMode] = useState<"entrar" | "alta">("entrar");
+  const [nom, setNom] = useState("");
+  const [cognoms, setCognoms] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [enviat, setEnviat] = useState(false);
@@ -131,8 +138,8 @@ export function EmailLoginForm() {
           <div className="space-y-1 text-sm">
             <p className="font-medium">Mira el teu correu</p>
             <p className="text-muted-foreground">
-              Si <strong className="text-foreground">{email}</strong> pertany a un centre
-              donat d&apos;alta, hi trobaràs un enllaç per entrar. Caduca en dues hores.
+              Hem enviat un enllaç a <strong className="text-foreground">{email}</strong>.
+              Caduca en dues hores i només es pot fer servir un cop.
             </p>
             <button
               type="button"
@@ -147,6 +154,24 @@ export function EmailLoginForm() {
     );
   }
 
+  async function enviaEnllac() {
+    const result = await signIn("resend", {
+      email: email.trim().toLowerCase(),
+      redirect: false,
+      callbackUrl,
+    });
+    // "AccessDenied" vol dir que aquesta adreça no pot entrar. No es diu: es
+    // mostra la mateixa confirmació que si s'hagués enviat, perquè si no,
+    // qualsevol podria anar provant adreces per saber quines existeixen al
+    // sistema. La resta d'errors sí que es diuen: són avaries de debò, i
+    // callar-les deixaria la persona esperant un correu que no arribarà.
+    if (result?.error && result.error !== "AccessDenied") {
+      toast.error("No s'ha pogut enviar el correu. Torna-ho a provar.");
+      return false;
+    }
+    return true;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) {
@@ -154,30 +179,51 @@ export function EmailLoginForm() {
       return;
     }
     setLoading(true);
-    const result = await signIn("resend", {
-      email: email.trim().toLowerCase(),
-      redirect: false,
-      callbackUrl,
-    });
-    setLoading(false);
-
-    // "AccessDenied" vol dir que aquesta adreça no pot entrar. No es diu: es
-    // mostra la mateixa confirmació que si s'hagués enviat, perquè si no,
-    // qualsevol podria anar provant adreces per saber quines existeixen al
-    // sistema. El text de la confirmació ja ho deixa clar sense mentir: "si
-    // pertany a un centre donat d'alta, hi trobaràs un enllaç".
-    //
-    // La resta d'errors sí que es diuen: són avaries de debò, i callar-les
-    // deixaria la persona esperant un correu que no arribarà mai.
-    if (result?.error && result.error !== "AccessDenied") {
-      toast.error("No s'ha pogut enviar el correu. Torna-ho a provar.");
-      return;
+    try {
+      if (mode === "alta") {
+        const dades = new FormData();
+        dades.set("nom", nom);
+        dades.set("cognoms", cognoms);
+        dades.set("email", email);
+        const alta = await registerWithEmail(dades);
+        if (!alta.ok) {
+          toast.error(alta.error ?? "No s'ha pogut completar l'alta.");
+          return;
+        }
+      }
+      if (await enviaEnllac()) setEnviat(true);
+    } finally {
+      setLoading(false);
     }
-    setEnviat(true);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      {mode === "alta" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="nom">Nom</Label>
+            <Input
+              id="nom"
+              autoComplete="given-name"
+              value={nom}
+              onChange={(e) => setNom(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="cognoms">Cognoms</Label>
+            <Input
+              id="cognoms"
+              autoComplete="family-name"
+              value={cognoms}
+              onChange={(e) => setCognoms(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-2">
         <Label htmlFor="email-acces">Correu electrònic</Label>
         <Input
@@ -198,10 +244,21 @@ export function EmailLoginForm() {
           no cal cap contrasenya.
         </p>
       </div>
+
       <Button type="submit" variant="outline" size="lg" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" /> : <Mail className="size-4" />}
-        Enviar-me un enllaç d&apos;accés
+        {mode === "alta" ? "Crear el compte" : "Enviar-me un enllaç d'accés"}
       </Button>
+
+      <button
+        type="button"
+        className="text-xs text-muted-foreground underline underline-offset-2"
+        onClick={() => setMode(mode === "alta" ? "entrar" : "alta")}
+      >
+        {mode === "alta"
+          ? "Ja tens compte? Entra-hi"
+          : "Encara no tens compte? Crea'n un"}
+      </button>
     </form>
   );
 }
