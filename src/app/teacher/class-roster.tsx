@@ -185,6 +185,7 @@ function StudentRow({ student }: { student: RosterStudent }) {
             <input type="hidden" name="studentId" value={student.id} />
             <ConfirmButton
               size="icon-sm"
+              label={`Eliminar ${student.name} del tot`}
               message={`Vols ELIMINAR ${student.name} del tot?\n\nS'esborraran també totes les seves entregues, les correccions i el seu perfil d'aprenentatge. No es pot desfer.\n\nSi només vol canviar de grup, fes servir "Treure del grup".`}
             >
               {""}

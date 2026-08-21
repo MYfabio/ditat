@@ -232,18 +232,25 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                           <TableCell className="text-right">
                             {/* Treure algu d'un centre el deixa existint sense escola.
                                 Esborrar-lo de debo nomes es pot fer des d'aqui, i cal
-                                per al dret de supressio del RGPD. */}
-                            <form action={deleteUser }>
-                              <input type="hidden" name="userId" value={u.id} />
-                              <ConfirmButton
-                                size="icon-sm"
-                                message={`Vols esborrar ${u.name || u.email} del tot?
+                                per al dret de supressio del RGPD.
+
+                                A la propia fila no hi surt: el servidor rebutja que
+                                algu s'esborri a si mateix, i un boto que sembla que
+                                hi es pero no fa res sembla una avaria. */}
+                            {u.id !== session?.user?.id && (
+                              <form action={deleteUser}>
+                                <input type="hidden" name="userId" value={u.id} />
+                                <ConfirmButton
+                                  size="icon-sm"
+                                  label={`Esborrar ${u.name || u.email}`}
+                                  message={`Vols esborrar ${u.name || u.email} del tot?
 
 S'esborren el seu compte, les seves entregues i els seus informes. Els dictats que hagi fet per a una classe es conserven. Aixo no es pot desfer.`}
-                              >
-                                {""}
-                              </ConfirmButton>
-                            </form>
+                                >
+                                  {""}
+                                </ConfirmButton>
+                              </form>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))

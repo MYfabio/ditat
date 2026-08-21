@@ -415,6 +415,7 @@ function UsersTable({
                     />
                     <ConfirmButton
                       size="icon-sm"
+                      label={`Treure ${u.name || u.email} del centre`}
                       message={
                         kind === "teacher"
                           ? `Vols treure ${u.name || u.email} del centre?

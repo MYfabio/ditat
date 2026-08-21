@@ -12,15 +12,21 @@ export function ConfirmButton({
   message,
   children,
   size = "sm",
+  label,
 }: {
   message: string;
   children: React.ReactNode;
   size?: "sm" | "icon-sm";
+  /** Obligatori quan el botó només mostra la icona: si no, qui fa servir un
+   *  lector de pantalla només hi sent "botó", sense saber què esborra. */
+  label?: string;
 }) {
   return (
     <Button
       type="submit"
       size={size}
+      aria-label={label}
+      title={label}
       variant="outline"
       className="text-destructive hover:bg-destructive/10"
       onClick={(e) => {
