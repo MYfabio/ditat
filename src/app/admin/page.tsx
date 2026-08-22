@@ -21,6 +21,8 @@ import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
 import { createSchool, updateUserRole, deleteSchool, deleteUser } from "./actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { FilterBar } from "@/components/dashboard/filter-bar";
+import { GrowthPanel } from "./growth-panel";
+import { carregaEmbut } from "@/lib/growth-metrics";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -116,6 +118,7 @@ async function loadAdminData(filters: { schoolId?: string; q?: string }) {
 
 export default async function AdminPage(props: PageProps<"/admin">) {
   const session = await auth();
+  const embut = await carregaEmbut().catch(() => null);
   const params = await props.searchParams;
   const schoolId = typeof params.centre === "string" ? params.centre : "";
   const q = typeof params.q === "string" ? params.q : "";
@@ -139,6 +142,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
           <TabsList>
             <TabsTrigger value="escoles">Escoles</TabsTrigger>
             <TabsTrigger value="usuaris">Usuaris i rols</TabsTrigger>
+            <TabsTrigger value="creixement">Creixement</TabsTrigger>
             <TabsTrigger value="metriques">Mètriques</TabsTrigger>
             <TabsTrigger value="auditoria">Auditoria RGPD</TabsTrigger>
           </TabsList>
@@ -373,6 +377,16 @@ S'esborren el seu compte, les seves entregues i els seus informes. Els dictats q
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="creixement">
+            {embut ? (
+              <GrowthPanel embut={embut} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No s&apos;han pogut carregar les dades de creixement.
+              </p>
+            )}
           </TabsContent>
 
           <TabsContent value="metriques">

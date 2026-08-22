@@ -283,6 +283,27 @@ model Submission {
   @@index([studentId])
 }
 
+/// Visites comptades per dia i per pagina.
+///
+/// No es guarda res de qui visita: ni IP, ni navegador, ni cap identificador.
+/// Nomes quantes vegades s'ha obert cada pagina cada dia, que es un numero i
+/// no una dada personal. Per aixo no cal ni banner de galetes ni consentiment:
+/// no hi ha res a consentir.
+///
+/// Es a dins i no a Google Analytics a proposit: aquest web ven que les dades
+/// de qui l'usa no van a raure a llocs rars, i seria contradictori enviar-hi
+/// el rastre de cada visita per saber quanta gent entra.
+model PageView {
+  id    String   @id @default(cuid())
+  /// Dia a mitjanit: totes les visites d'un mateix dia sumen a la mateixa fila.
+  day   DateTime
+  path  String
+  count Int      @default(0)
+
+  @@unique([day, path])
+  @@index([day])
+}
+
 /// Qui ha dit que pagaria la subscripcio abans que estigues oberta.
 ///
 /// No es una llista de correu: es la mesura de si algu ho vol de debo. Cada
