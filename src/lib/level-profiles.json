@@ -1,0 +1,59 @@
+{
+  "_comentari": "Perfil mesurat sobre els dictats oficials de la Generalitat de Catalunya. Nomes numeros derivats: cap text original no es desa aqui. Regenerar amb: node scripts/calibra-nivells.mjs",
+  "_font": "https://www.gencat.cat/llengua/dictats/dictats.xml",
+  "_mesuratEl": "2026-08-22",
+  "perfil": {
+    "B1": {
+      "mostres": 88,
+      "paraules": {
+        "min": 43,
+        "mediana": 112,
+        "max": 159
+      },
+      "frases": 7,
+      "paraulesPerFrase": 14.4,
+      "marcadesPer100": 10.8,
+      "llarguesPercent": 11,
+      "comesPerFrase": 0.7
+    },
+    "B2": {
+      "mostres": 106,
+      "paraules": {
+        "min": 120,
+        "mediana": 158,
+        "max": 205
+      },
+      "frases": 9,
+      "paraulesPerFrase": 17.8,
+      "marcadesPer100": 8.1,
+      "llarguesPercent": 14.3,
+      "comesPerFrase": 0.8
+    },
+    "C1": {
+      "mostres": 102,
+      "paraules": {
+        "min": 157,
+        "mediana": 205,
+        "max": 229
+      },
+      "frases": 11,
+      "paraulesPerFrase": 18.5,
+      "marcadesPer100": 6.5,
+      "llarguesPercent": 14.9,
+      "comesPerFrase": 1
+    },
+    "C2": {
+      "mostres": 83,
+      "paraules": {
+        "min": 163,
+        "mediana": 202,
+        "max": 238
+      },
+      "frases": 10,
+      "paraulesPerFrase": 20.3,
+      "marcadesPer100": 5.3,
+      "llarguesPercent": 16.1,
+      "comesPerFrase": 1.1
+    }
+  }
+}

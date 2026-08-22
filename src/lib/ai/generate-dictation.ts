@@ -1,6 +1,6 @@
 import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 import { getMockDictationText } from "@/lib/ai/mock-dictations";
-import { gradeLabel, ruleLabel, lengthForGrade, countWords } from "@/lib/dictation-rules";
+import { gradeLabel, ruleLabel, lengthForGrade, countWords, styleGuidanceFor} from "@/lib/dictation-rules";
 import { skillLabel } from "@/lib/skill-taxonomy";
 
 export type GenerateDictationInput = {
@@ -47,7 +47,8 @@ ${
     : ""
 }
 
-LLARGADA OBLIGATÒRIA: entre ${length.min} i ${length.max} paraules (${length.cycle}, ${length.ages}).
+${styleGuidanceFor(gradeLevel) ? `ESTIL DEL NIVELL: ${styleGuidanceFor(gradeLevel)}
+` : ""}LLARGADA OBLIGATÒRIA: entre ${length.min} i ${length.max} paraules (${length.cycle}, ${length.ages}).
 ${length.guidance}
 Compta les paraules abans de respondre: un text fora d'aquest rang no serveix.
 

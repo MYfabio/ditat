@@ -116,13 +116,26 @@ export const TEXT_LENGTH_BY_CYCLE = [
  * equivalent: un adult de nivell A2 llegeix i escriu mes de pressa que un nen
  * de 4t, encara que ortograficament se li demani el mateix.
  */
+/**
+ * Llargada del dictat per nivell del MECR, en paraules.
+ *
+ * De B1 a C2 no son xifres triades a ull: surten de mesurar els 379 dictats
+ * oficials de la Generalitat (percentils 10 i 90 de cada nivell). Abans un C1
+ * es generava d'entre 140 i 180 paraules quan la mediana oficial es 205: tots
+ * els C1 sortien curts i ningu ho podia saber, perque no hi havia res amb que
+ * comparar-los.
+ *
+ * A1 i A2 continuen estimats: la Generalitat no en publica dictats.
+ *
+ * Es regeneren amb: node scripts/calibra-nivells.mjs
+ */
 export const TEXT_LENGTH_BY_MCER: Record<string, { min: number; max: number }> = {
   A1: { min: 30, max: 50 },
   A2: { min: 50, max: 80 },
-  B1: { min: 80, max: 110 },
-  B2: { min: 110, max: 140 },
-  C1: { min: 140, max: 180 },
-  C2: { min: 170, max: 220 },
+  B1: { min: 43, max: 159 },
+  B2: { min: 120, max: 205 },
+  C1: { min: 157, max: 229 },
+  C2: { min: 163, max: 238 },
 };
 
 export function lengthForGrade(gradeLevel: string) {
@@ -151,4 +164,32 @@ export function rulesExpectedAt(gradeLevel: string) {
   const current = gradeIndex(gradeLevel);
   if (current < 0) return [...ORTHOGRAPHIC_RULES];
   return ORTHOGRAPHIC_RULES.filter((r) => gradeIndex(r.expectedFrom) <= current);
+}
+
+/**
+ * Com ha de ser la frase a cada nivell, mesurat sobre els dictats oficials.
+ *
+ * La llargada tota sola no distingeix un C1 d'un C2: la mediana oficial es 205
+ * i 202 paraules, gairebe la mateixa. El que canvia es la frase —18,5 paraules
+ * de mitjana a C1, 20,3 a C2— i el vocabulari. Sense aixo, demanar "nivell C2"
+ * nomes feia textos una mica mes llargs, que no es el mateix.
+ */
+export const MCER_STYLE: Record<string, { paraulesPerFrase: number; llarguesPercent: number }> = {
+  A1: { paraulesPerFrase: 9, llarguesPercent: 6 },
+  A2: { paraulesPerFrase: 12, llarguesPercent: 8 },
+  B1: { paraulesPerFrase: 14.4, llarguesPercent: 11 },
+  B2: { paraulesPerFrase: 17.8, llarguesPercent: 14.3 },
+  C1: { paraulesPerFrase: 18.5, llarguesPercent: 14.9 },
+  C2: { paraulesPerFrase: 20.3, llarguesPercent: 16.1 },
+};
+
+/** Instruccions d'estil per al nivell, si en tenim de mesurades. */
+export function styleGuidanceFor(level: string): string | null {
+  const e = MCER_STYLE[level];
+  if (!e) return null;
+  return (
+    `Frases d'unes ${Math.round(e.paraulesPerFrase)} paraules de mitjana, amb subordinacio ` +
+    `propia del nivell. Al voltant d'un ${Math.round(e.llarguesPercent)}% de les paraules han ` +
+    `de tenir mes de set lletres: vocabulari precis i no infantil.`
+  );
 }
