@@ -83,7 +83,10 @@ El camp "feedback" ha de ser un missatge curt, positiu i pedagogic en català pe
 
   try {
     const message = await client.messages.create({
-      model: "claude-sonnet-5",
+      // Comparar dos textos, decidir que es falta i que es una altra manera
+      // valida de dir-ho, i explicar per que, es la feina que mes valor te de
+      // tot el producte. Aqui no s'estalvia.
+      model: "claude-opus-5",
       max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],
     });

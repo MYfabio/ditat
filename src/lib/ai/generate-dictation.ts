@@ -58,7 +58,14 @@ Respon només amb el text del dictat, sense cometes ni comentaris addicionals.`;
 
   async function ask(messages: { role: "user" | "assistant"; content: string }[]) {
     const message = await client!.messages.create({
-      model: "claude-sonnet-5",
+      // El producte promet textos de nivell C1 i C2. El registre i la
+      // naturalitat del catala avancat es justament on es nota el model, i
+      // un dictat son unes poques centenes de tokens: la diferencia de preu
+      // es de decimes de centim, molt per sota del que costa la locucio.
+      model: "claude-opus-5",
+      // Escriure un text curt amb unes restriccions clares no demana gaire
+      // deliberacio, i baixar l'esforc el fa mes rapid i mes barat.
+      output_config: { effort: "low" },
       max_tokens: 1000,
       messages,
     });
