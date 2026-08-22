@@ -49,6 +49,21 @@ export async function POST(req: Request) {
 
   // El widget públic de la landing només vol el text, sense persistir res a la BD.
   if (preview) {
+    // Aquest cami no passa per cap sessio, aixi que el topall per persona no hi
+    // val: sense res al davant, qualsevol pot cridar-lo en bucle i la factura
+    // de la IA la paguem nosaltres. S'hi posa un limit per adreça.
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "desconegut";
+    const limitPublic = comprovaLimit(`preview:${ip}`, 20, 60 * 60 * 1000);
+    if (!limitPublic.permes) {
+      return NextResponse.json(
+        { error: "Has provat molts dictats seguits. Torna-ho a provar d'aquí a una estona." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ title, text, mocked });
   }
 

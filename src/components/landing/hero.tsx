@@ -35,9 +35,9 @@ export function Hero() {
               variant="outline"
               className="w-full sm:w-auto"
               nativeButton={false}
-              render={<a href="#provador" />}
+              render={<a href="/dictats-c1-c2" />}
             >
-              Provar-ho sense registrar-me
+              Et prepares un C1 o C2?
             </Button>
           </div>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
