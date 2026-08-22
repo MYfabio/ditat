@@ -30,7 +30,18 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      {
+        // El domini de Railway serveix exactament el mateix contingut que
+        // dictats.cat. Si un cercador l'indexa, el web competeix amb ell
+        // mateix i l'autoritat es reparteix entre dues adreces. Aqui se li diu
+        // que no l'indexi: el domini bo nomes n'hi ha un.
+        source: "/:path*",
+        has: [{ type: "host", value: "ditat-production.up.railway.app" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
   },
 };
 

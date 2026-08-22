@@ -15,10 +15,56 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const URL_BASE = "https://www.dictats.cat";
+
+const DESCRIPCIO =
+  "Practica dictats en català adaptats al teu nivell, del A1 al C2. Els escoltes, els " +
+  "escrius i te'ls corregim explicant-te cada falta. Els següents surten dels teus errors. " +
+  "Quatre dictats al mes gratis.";
+
 export const metadata: Metadata = {
-  title: "dictats.cat | Generador de dictats amb IA per a escoles catalanes",
-  description:
-    "El primer generador de dictats en català amb IA i correcció per foto. Dictats personalitzats, OCR de fotos manuscrites i suport NEE per a TDAH i dislèxia.",
+  // Sense això, les adreces canòniques i les imatges per compartir surten
+  // relatives i els cercadors i el WhatsApp no les saben resoldre.
+  metadataBase: new URL(URL_BASE),
+  title: {
+    default: "dictats.cat · Dictats en català per millorar l'ortografia",
+    // Les pàgines de dins posen el seu títol i aquesta plantilla hi afegeix la marca.
+    template: "%s · dictats.cat",
+  },
+  description: DESCRIPCIO,
+  applicationName: "dictats.cat",
+  keywords: [
+    "dictats en català",
+    "dictats català online",
+    "ortografia catalana",
+    "practicar català escrit",
+    "nivell C1 català",
+    "exercicis ortografia catalana",
+  ],
+  authors: [{ name: "dictats.cat" }],
+  alternates: {
+    // El domini bo és un: sense això, el mateix contingut servit des d'una
+    // altra adreça competeix amb ell mateix als cercadors.
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ca_ES",
+    url: URL_BASE,
+    siteName: "dictats.cat",
+    title: "Dictats en català per millorar l'ortografia",
+    description: DESCRIPCIO,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dictats en català per millorar l'ortografia",
+    description: DESCRIPCIO,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
