@@ -10,8 +10,11 @@ import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
 import { AutonomousPanel } from "./autonomous-panel";
+import { SubscriptionCard } from "./subscription-card";
 import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
+import { estatDelMes, DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
+import { stripeConfigurat } from "@/lib/stripe";
 import { Flame, Star, Trophy, Medal } from "lucide-react";
 import { ruleLabel } from "@/lib/dictation-rules";
 
@@ -115,6 +118,10 @@ export default async function StudentPage() {
 
   // Un dictat ja entregat no es feina pendent: nomes es historial. Separar-ho
   // es el que permet ensenyar-li una sola cosa a fer.
+  // Nomes te sentit per a qui no va a través d'un centre.
+  const autonom = !!session?.user && !session.user.classGroupId;
+  const subscripcio = autonom ? await estatDelMes(session!.user.id) : null;
+
   const entregats = new Set(submissions.map((s) => s.dictationId));
   const pendents: DictationForStudent[] = dictations
     .filter((d) => !entregats.has(d.id))
@@ -163,6 +170,16 @@ export default async function StudentPage() {
               <CardTitle className="text-base">Aprèn pel teu compte</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {subscripcio && (
+                <SubscriptionCard
+                  actiu={subscripcio.actiu}
+                  restants={subscripcio.restants}
+                  gratuitsAlMes={DICTATS_GRATUITS_AL_MES}
+                  preuMensual={PREU_MENSUAL_EUR}
+                  pagamentsActius={stripeConfigurat()}
+                />
+              )}
+
               <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
 
               <div className="space-y-3 border-t pt-4">

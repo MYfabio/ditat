@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { canAccess } from "@/lib/access-rules";
+import { edatSuficient, EDAT_MINIMA } from "@/lib/subscription";
 
 /**
  * Alta amb nom i cognoms, sense contrasenya.
@@ -22,8 +23,22 @@ export async function registerWithEmail(formData: FormData): Promise<{
   const nom = String(formData.get("nom") || "").trim();
   const cognoms = String(formData.get("cognoms") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
+  const anyNaixement = Number(formData.get("anyNaixement") || 0);
 
   if (!nom || !cognoms) return { ok: false, error: "Escriu el nom i els cognoms." };
+
+  const anyActual = new Date().getFullYear();
+  if (!Number.isInteger(anyNaixement) || anyNaixement < 1900 || anyNaixement > anyActual) {
+    return { ok: false, error: "Escriu el teu any de naixement." };
+  }
+  // Per sota dels 14 anys qui ha de consentir es qui te la pàtria potestat, i
+  // aixo no es resol amb una casella. La via per a menors es el seu centre.
+  if (!edatSuficient(anyNaixement)) {
+    return {
+      ok: false,
+      error: `Per donar-te d'alta pel teu compte cal tenir ${EDAT_MINIMA} anys o mes. Si ets a l'escola o a l'institut, demana el codi de classe al teu/a docent.`,
+    };
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: "Aquest correu no sembla valid." };
   }
@@ -48,7 +63,13 @@ export async function registerWithEmail(formData: FormData): Promise<{
 
     if (!existing) {
       await prisma.user.create({
-        data: { email, name: `${nom} ${cognoms}`, role: "STUDENT", schoolId: decision.schoolId },
+        data: {
+          email,
+          name: `${nom} ${cognoms}`,
+          role: "STUDENT",
+          schoolId: decision.schoolId,
+          birthYear: anyNaixement,
+        },
       });
       return { ok: true };
     }
@@ -59,7 +80,7 @@ export async function registerWithEmail(formData: FormData): Promise<{
     if (!jaHiHaEntrat) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: { name: `${nom} ${cognoms}` },
+        data: { name: `${nom} ${cognoms}`, birthYear: anyNaixement },
       });
     }
     return { ok: true };

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { normaliseJoinCode } from "@/lib/join-code";
 import { isMcerLevel } from "@/lib/dictation-rules";
 import { refreshLearningProfile } from "@/lib/adaptive-dictations";
+import { estatDelMes, DICTATS_GRATUITS_AL_MES } from "@/lib/subscription";
 
 export type JoinResult = { ok: true; groupName: string } | { ok: false; error: string };
 
@@ -95,7 +96,13 @@ export async function setLearningLevel(level: string): Promise<{ ok: boolean; er
  * text el tria el mateix motor adaptatiu que fa servir amb un grup: surt de la
  * seva habilitat mes fluixa, no d'una llista qualsevol.
  */
-export async function requestOwnDictation(): Promise<{ ok: boolean; error?: string }> {
+export async function requestOwnDictation(): Promise<{
+  ok: boolean;
+  error?: string;
+  /** Cert quan el que falta es pagar, no cap altra cosa: la pantalla ho fa servir
+   *  per oferir la subscripcio en lloc d'ensenyar un error i prou. */
+  limitAssolit?: boolean;
+}> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Has d'iniciar sessió." };
 
@@ -117,6 +124,17 @@ export async function requestOwnDictation(): Promise<{ ok: boolean; error?: stri
       select: { id: true },
     });
     if (pending) return { ok: false, error: "Ja tens un dictat per fer." };
+
+    // El topall del pla gratuït es comprova aquí i no a la pantalla: la
+    // pantalla es pot saltar, això no.
+    const estat = await estatDelMes(session.user.id);
+    if (!estat.actiu && estat.restants !== null && estat.restants <= 0) {
+      return {
+        ok: false,
+        limitAssolit: true,
+        error: `Ja has fet els ${DICTATS_GRATUITS_AL_MES} dictats gratuïts d'aquest mes.`,
+      };
+    }
 
     const profile = await refreshLearningProfile(session.user.id);
     if (!profile) return { ok: false, error: "No s'ha pogut preparar el dictat." };

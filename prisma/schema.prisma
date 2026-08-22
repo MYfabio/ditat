@@ -80,6 +80,21 @@ model User {
   /// surt del curs del grup.
   learningLevel String?
 
+  /// Any de naixement, que es demana en donar-se d'alta pel seu compte. A
+  /// l'Estat espanyol l'edat de consentiment digital son 14 anys: per sota,
+  /// qui ha de decidir es qui te la pàtria potestat, i aquesta via d'alta no
+  /// serveix. Qui entra a través d'un centre no l'omple: hi respon el centre.
+  birthYear Int?
+
+  /// Subscripció de qui aprèn pel seu compte. Buit vol dir pla gratuït.
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  /// "active", "trialing", "past_due", "canceled"... tal com ho diu Stripe.
+  subscriptionStatus   String?
+  /// Fins quan esta pagat. Es conserva l'accés fins aquesta data encara que
+  /// es doni de baixa: ha pagat el mes sencer.
+  subscriptionEndsAt   DateTime?
+
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 

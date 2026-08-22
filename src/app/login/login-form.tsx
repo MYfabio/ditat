@@ -126,6 +126,7 @@ export function EmailLoginForm() {
   const [mode, setMode] = useState<"entrar" | "alta">("entrar");
   const [nom, setNom] = useState("");
   const [cognoms, setCognoms] = useState("");
+  const [anyNaixement, setAnyNaixement] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [enviat, setEnviat] = useState(false);
@@ -184,6 +185,7 @@ export function EmailLoginForm() {
         const dades = new FormData();
         dades.set("nom", nom);
         dades.set("cognoms", cognoms);
+        dades.set("anyNaixement", anyNaixement);
         dades.set("email", email);
         const alta = await registerWithEmail(dades);
         if (!alta.ok) {
@@ -221,6 +223,30 @@ export function EmailLoginForm() {
               required
             />
           </div>
+        </div>
+      )}
+
+      {mode === "alta" && (
+        <div className="grid gap-2">
+          <Label htmlFor="any-naixement">Any de naixement</Label>
+          <Input
+            id="any-naixement"
+            type="number"
+            inputMode="numeric"
+            min={1900}
+            max={new Date().getFullYear()}
+            placeholder="1990"
+            value={anyNaixement}
+            onChange={(e) => setAnyNaixement(e.target.value)}
+            aria-describedby="ajuda-edat"
+            required
+          />
+          {/* Nomes l'any: per comprovar l'edat no cal el dia ni el mes, i
+              demanar-los seria recollir mes dades de les necessaries. */}
+          <p id="ajuda-edat" className="text-xs text-muted-foreground">
+            Cal tenir 14 anys o mes per donar-se d&apos;alta pel seu compte. Si vas a
+            l&apos;escola o a l&apos;institut, demana el codi de classe al teu/a docent.
+          </p>
         </div>
       )}
 
