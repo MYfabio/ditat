@@ -4,7 +4,7 @@ import { ShieldCheck, BookOpenCheck, KeyRound } from "lucide-react";
 const BADGES = [
   { icon: BookOpenCheck, label: "100% Currículum de Catalunya" },
   { icon: ShieldCheck, label: "RGPD Educatiu" },
-  { icon: KeyRound, label: "Google / Microsoft SSO" },
+  { icon: KeyRound, label: "Sense targeta per començar" },
 ];
 
 export function Hero() {
@@ -13,22 +13,22 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:py-28">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            El primer generador de dictats en català amb{" "}
-            <span className="text-primary">IA</span> i correcció per foto
+            Millora la teva ortografia catalana,{" "}
+            <span className="text-primary">un dictat cada dia</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            dictats.cat genera dictats personalitzats segons el currículum català,
-            corregeix fotos de dictats manuscrits amb intel·ligència artificial i
-            adapta l&apos;experiència per a alumnat amb TDAH i dislèxia.
+            Dictats fets a la teva mida, del A1 al C2. Els escoltes, els escrius
+            —al teclat o a mà i en fas una foto— i te&apos;ls corregim explicant-te
+            cada falta. Els següents surten dels errors que has comès.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               size="lg"
               className="w-full sm:w-auto"
               nativeButton={false}
-              render={<a href="#demo" />}
+              render={<a href="/login" />}
             >
-              Demana Demo
+              Comença gratis
             </Button>
             <Button
               size="lg"
@@ -37,7 +37,7 @@ export function Hero() {
               nativeButton={false}
               render={<a href="#provador" />}
             >
-              Provador Interactiu
+              Provar-ho sense registrar-me
             </Button>
           </div>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">

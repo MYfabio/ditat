@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { joinWaitlist } from "./waitlist-actions";
 
 /**
  * Quants dictats li queden aquest mes, i com passar a il·limitats.
@@ -26,7 +27,8 @@ export function SubscriptionCard({
   /** Fals mentre no hi hagi claus de pagament configurades. */
   pagamentsActius: boolean;
 }) {
-  const [carregant, setCarregant] = useState<"alta" | "gestio" | null>(null);
+  const [carregant, setCarregant] = useState<"alta" | "gestio" | "espera" | null>(null);
+  const [apuntat, setApuntat] = useState(false);
 
   async function obre(rutaFinal: "checkout" | "portal", quin: "alta" | "gestio") {
     setCarregant(quin);
@@ -97,10 +99,39 @@ export function SubscriptionCard({
           )}
           Dictats il·limitats per {preuMensual} € al mes
         </Button>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          La subscripció s&apos;obrirà ben aviat.
+      ) : apuntat ? (
+        <p className="text-sm text-primary">
+          Fet. T&apos;escriurem al correu el dia que s&apos;obri.
         </p>
+      ) : (
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={carregant !== null}
+            onClick={async () => {
+              setCarregant("espera");
+              const r = await joinWaitlist();
+              setCarregant(null);
+              if (!r.ok) {
+                toast.error(r.error ?? "No s'ha pogut apuntar.");
+                return;
+              }
+              setApuntat(true);
+            }}
+          >
+            {carregant === "espera" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <CreditCard className="size-4" />
+            )}
+            Avisa&apos;m quan s&apos;obri
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            La subscripció encara no està oberta. Deixa&apos;ns saber que la vols i
+            t&apos;avisarem.
+          </p>
+        </div>
       )}
     </div>
   );

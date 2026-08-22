@@ -63,7 +63,7 @@ export function Pricing() {
               className={plan.highlight ? "border-primary shadow-lg shadow-primary/10" : ""}
             >
               <CardHeader>
-                {plan.highlight && <Badge className="mb-2 w-fit">Recomanat</Badge>}
+                {plan.highlight && <Badge className="mb-2 w-fit">S&apos;obre aviat</Badge>}
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
                 <p className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-bold">{plan.price}</span>
@@ -86,7 +86,7 @@ export function Pricing() {
                   nativeButton={false}
                   render={<a href="/login" />}
                 >
-                  {plan.highlight ? "Començar" : "Provar-ho gratis"}
+                  {plan.highlight ? "Avisa'm quan s'obri" : "Començar gratis"}
                 </Button>
               </CardContent>
             </Card>
