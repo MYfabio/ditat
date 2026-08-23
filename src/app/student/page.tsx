@@ -164,36 +164,6 @@ export default async function StudentPage() {
             que ha de fer per començar. Un cop hi és, pertany al seu grup i la
             pantalla és només per treballar. Les adaptacions les decideix el
             docent i s'apliquen soles: no són una opció de l'alumne. */}
-        {!session?.user?.classGroupId && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Aprèn pel teu compte</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {subscripcio && (
-                <SubscriptionCard
-                  actiu={subscripcio.actiu}
-                  restants={subscripcio.restants}
-                  gratuitsAlMes={DICTATS_GRATUITS_AL_MES}
-                  preuMensual={PREU_MENSUAL_EUR}
-                  pagamentsActius={stripeConfigurat()}
-                />
-              )}
-
-              <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
-
-              <div className="space-y-3 border-t pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Si el teu centre fa servir dictats.cat, escriu el codi que t&apos;ha donat
-                  el teu/a docent i passaràs a rebre els dictats de la classe.
-                </p>
-                <Suspense fallback={<div className="h-16" />}>
-                  <JoinClass hasGroup={false} />
-                </Suspense>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Dos espais, no un: el que has de fer ara, i com et va anant. Barrejar
             les dues coses feia que un dictat pendent quedes despres de quatre
@@ -204,16 +174,44 @@ export default async function StudentPage() {
               Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
             </TabsTrigger>
             <TabsTrigger value="progres">El meu progres</TabsTrigger>
+            {autonom && <TabsTrigger value="compte">El meu compte</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="perfer">
-            {dictations.length === 0 ? (
+          <TabsContent value="perfer" className="space-y-4">
+            {/* Qui encara no ha triat nivell no pot rebre res: es l'unica cosa
+                que ha de fer, i per tant l'unica que ha de veure. */}
+            {autonom && !learningLevel ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Comencem</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
+                </CardContent>
+              </Card>
+            ) : dictations.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                 Encara no tens cap dictat. Si encara no ets a cap classe,
                 apunta-t&apos;hi amb el codi de mes amunt.
               </div>
             ) : (
               <DictationQueue pending={pendents} sentencesPerChunk={sentencesPerChunk(needs)} />
+            )}
+
+            {/* L'accio que genera feina va amb la feina, no en una targeta de
+                configuracio a part. Una linia, no un bloc. */}
+            {autonom && learningLevel && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed p-3">
+                <p className="text-xs text-muted-foreground">
+                  Nivell {learningLevel}
+                  {subscripcio?.actiu
+                    ? " · dictats il·limitats"
+                    : subscripcio && subscripcio.restants !== null
+                      ? ` · ${subscripcio.restants} de ${DICTATS_GRATUITS_AL_MES} dictats gratuits aquest mes`
+                      : ""}
+                </p>
+                <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
+              </div>
             )}
           </TabsContent>
 
@@ -302,6 +300,35 @@ export default async function StudentPage() {
           </Card>
         )}
         </TabsContent>
+
+          {autonom && (
+            <TabsContent value="compte" className="space-y-6">
+              {subscripcio && (
+                <SubscriptionCard
+                  actiu={subscripcio.actiu}
+                  restants={subscripcio.restants}
+                  gratuitsAlMes={DICTATS_GRATUITS_AL_MES}
+                  preuMensual={PREU_MENSUAL_EUR}
+                  pagamentsActius={stripeConfigurat()}
+                />
+              )}
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Vas a una classe?</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Si el teu centre fa servir dictats.cat, escriu el codi que t&apos;ha
+                    donat el teu/a docent i passaras a rebre els dictats de la classe.
+                  </p>
+                  <Suspense fallback={<div className="h-16" />}>
+                    <JoinClass hasGroup={false} />
+                  </Suspense>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </>
