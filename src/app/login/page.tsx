@@ -10,6 +10,9 @@ export default function LoginPage() {
     !!process.env.AUTH_MICROSOFT_ENTRA_ID_ID && !!process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
   const hasSSO = hasGoogle || hasMicrosoft;
   const hasEmailLogin = !!process.env.AUTH_RESEND_KEY;
+  // Si l'alta lliure esta oberta, el correu no cal que sigui d'un centre.
+  const altaLliure =
+    (process.env.AUTH_ALLOW_SELF_LEARNERS ?? "true").toLowerCase() !== "false";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-16">
@@ -20,7 +23,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold">Benvingut/da</h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          Amb el compte del teu centre educatiu, o amb un enllaç al teu correu.
+          {altaLliure
+            ? "Amb el teu compte de Google o amb un enllaç al teu correu."
+            : "Amb el compte del teu centre educatiu, o amb un enllaç al teu correu."}
         </p>
         <Suspense fallback={<div className="h-40" />}>
           <LoginError />
@@ -36,7 +41,7 @@ export default function LoginPage() {
                   <span className="h-px flex-1 bg-border" />
                 </div>
               )}
-              {hasEmailLogin && <EmailLoginForm />}
+              {hasEmailLogin && <EmailLoginForm altaLliure={altaLliure} />}
             </div>
           ) : demoLoginEnabled ? (
             <DevMockLoginForm />

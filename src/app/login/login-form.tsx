@@ -120,7 +120,7 @@ export function SSOButtons({
  * L'alta sí que demana nom i cognoms, perquè l'enllaç sol no els recull i el
  * docent es trobava un correu sense persona a la llista de classe.
  */
-export function EmailLoginForm() {
+export function EmailLoginForm({ altaLliure = true }: { altaLliure?: boolean }) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [mode, setMode] = useState<"entrar" | "alta">("entrar");
@@ -265,9 +265,13 @@ export function EmailLoginForm() {
         {/* Dir la norma no revela res: no diu si una adreça concreta existeix,
             nomes que ha de ser la del centre. Sense aixo, qui hi posa el seu
             correu personal es queda esperant un correu que no arribara mai. */}
+        {/* El text ha de dir la veritat segons com estigui configurat el
+            registre. Dir "ha de ser el correu del teu centre" quan l'alta
+            lliure esta oberta fa fora gent que si que hi pot entrar. */}
         <p id="ajuda-email" className="text-xs text-muted-foreground">
-          Ha de ser el correu del teu centre. T&apos;enviarem un enllaç per entrar:
-          no cal cap contrasenya.
+          {altaLliure
+            ? "Qualsevol correu et serveix, també el personal. T'enviarem un enllaç per entrar: no cal cap contrasenya."
+            : "Ha de ser el correu del teu centre educatiu. T'enviarem un enllaç per entrar: no cal cap contrasenya."}
         </p>
       </div>
 
