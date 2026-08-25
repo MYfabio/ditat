@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+
+/** Alta de centre centralitzada a aulaia.cat: el formulari es el mateix per a totes les apps. */
+const ALTA_URL = "https://www.aulaia.cat/alta?app=dictats";
 
 export function DemoCta() {
   return (
@@ -9,18 +12,27 @@ export function DemoCta() {
           Porta dictats.cat al teu centre
         </h2>
         <p className="max-w-xl text-primary-foreground/90">
-          Escriu-nos i t&apos;ensenyarem com dictats.cat pot estalviar hores de
-          correcció al teu equip docent aquest mateix curs.
+          Explica&apos;ns qui sou i us preparem l&apos;accés. Et respondrem amb els
+          passos per començar aquest mateix curs.
         </p>
         <Button
           size="lg"
           variant="secondary"
           nativeButton={false}
-          render={<a href="mailto:hola@dictats.cat?subject=Demanda%20de%20demo%20-%20dictats.cat" />}
+          render={<a href={ALTA_URL} />}
         >
-          <Mail className="size-4" />
-          hola@dictats.cat
+          Sol·licita accés per al teu centre
+          <ArrowRight className="size-4" />
         </Button>
+        <p className="text-sm text-primary-foreground/70">
+          Prefereixes escriure&apos;ns directament?{" "}
+          <a
+            className="underline underline-offset-4"
+            href="mailto:hola@dictats.cat?subject=Demanda%20de%20demo%20-%20dictats.cat"
+          >
+            hola@dictats.cat
+          </a>
+        </p>
       </div>
     </section>
   );
