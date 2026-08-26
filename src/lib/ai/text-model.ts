@@ -47,17 +47,15 @@ async function askGemini(prompt: string, maxTokens: number): Promise<string> {
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          // Escriure un dictat o comparar dos textos no demana deliberar:
-          // amb el raonament actiu, el model es gastava tot el pressupost
-          // pensant i la resposta sortia tallada a mitja frase. Sense ell,
-          // respon sencer, mes rapid i mes barat.
-          thinkingConfig: { thinkingBudget: 0 },
           // El pressupost de tokens el comparteixen el raonament i la resposta.
           // Amb el limit just, el model es gasta pensant i el text surt tallat
-          // a mitja frase: un dictat de 200 paraules arribava a 23. Es dona
-          // marge de sobres perque el que costa es el que es fa servir, no el
-          // sostre que es demana.
-          maxOutputTokens: maxTokens * 4,
+          // a mitja frase: un dictat de dues-centes paraules arribava a
+          // vint-i-tres. Es dona marge de sobres perque el que costa es el que
+          // es fa servir, no el sostre que es demana.
+          //
+          // Apagar el raonament seria mes net, pero el 3.6-flash no accepta
+          // thinkingConfig i respon 400.
+          maxOutputTokens: Math.max(maxTokens * 8, 8000),
           temperature: 0.9,
         },
       }),
@@ -81,7 +79,7 @@ async function askGemini(prompt: string, maxTokens: number): Promise<string> {
   // Un text tallat es pitjor que cap text: com a dictat no te ni cap ni peus,
   // i si no es diu res passa per bo.
   if (candidat?.finishReason === "MAX_TOKENS") {
-    throw new Error(`Gemini ha tallat la resposta per manca de tokens (${maxTokens * 4})`);
+    throw new Error("Gemini ha tallat la resposta per manca de tokens");
   }
   return text.trim();
 }
