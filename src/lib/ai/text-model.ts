@@ -12,7 +12,10 @@ import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
  * configurada per a la locucio. Qui crida no ha de saber res d'aixo.
  */
 
-const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-flash";
+// Google retira models sense avisar: el 2.5-flash va deixar d'acceptar
+// comptes nous i tornava un 404 amb el nom del substitut. Es deixa canviable
+// per variable per no haver de desplegar quan torni a passar.
+const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-3.6-flash";
 
 export const hasGeminiKey = !!process.env.GEMINI_API_KEY;
 
