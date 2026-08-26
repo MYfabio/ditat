@@ -1,4 +1,4 @@
-import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
+import { askText, hasTextModel } from "@/lib/ai/text-model";
 
 export type EvaluationError = {
   paraulaOriginal: string;
@@ -58,8 +58,7 @@ export async function evaluateSubmission(
   originalText: string,
   ocrText: string
 ): Promise<EvaluationResult> {
-  const client = getAnthropicClient();
-  if (!hasAnthropicKey || !client) {
+  if (!hasTextModel) {
     return mockEvaluate(originalText, ocrText);
   }
 
@@ -82,16 +81,10 @@ Respon NOMÉS amb un JSON vàlid amb aquesta forma exacta, sense cap text addici
 El camp "feedback" ha de ser un missatge curt, positiu i pedagogic en català per a l'alumne.`;
 
   try {
-    const message = await client.messages.create({
-      // Comparar dos textos, decidir que es falta i que es una altra manera
-      // valida de dir-ho, i explicar per que, es la feina que mes valor te de
-      // tot el producte. Aqui no s'estalvia.
-      model: "claude-opus-5",
-      max_tokens: 1500,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const block = message.content.find((b) => b.type === "text");
-    const raw = block && "text" in block ? block.text.trim() : "";
+    // Comparar dos textos, decidir que es falta i que es una altra manera
+    // valida de dir-ho, i explicar per que, es la feina amb mes valor de tot
+    // el producte: si aixo falla, val mes dir-ho que no pas fingir.
+    const raw = (await askText(prompt, 1500)) ?? "";
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Resposta sense JSON");
     const parsed = JSON.parse(jsonMatch[0]);

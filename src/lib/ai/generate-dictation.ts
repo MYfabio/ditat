@@ -1,4 +1,4 @@
-import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
+import { askText, hasTextModel } from "@/lib/ai/text-model";
 import { getMockDictationText } from "@/lib/ai/mock-dictations";
 import { gradeLabel, ruleLabel, lengthForGrade, countWords, styleGuidanceFor} from "@/lib/dictation-rules";
 import { skillLabel } from "@/lib/skill-taxonomy";
@@ -24,8 +24,7 @@ export async function generateDictationText(
   const focus = targetSubskill ? skillLabel(targetSubskill) : ruleLabel(targetRule);
   const title = `Dictat: ${focus} (${gradeLabel(gradeLevel)})`;
 
-  const client = getAnthropicClient();
-  if (!hasAnthropicKey || !client) {
+  if (!hasTextModel) {
     return { text: getMockDictationText(targetRule, gradeLevel), title, mocked: true };
   }
 
@@ -56,41 +55,29 @@ Fes servir un vocabulari natural i proper a l'alumnat, sense encapçalaments ni 
 ${neeInstruction}
 Respon només amb el text del dictat, sense cometes ni comentaris addicionals.`;
 
-  async function ask(messages: { role: "user" | "assistant"; content: string }[]) {
-    const message = await client!.messages.create({
-      // El producte promet textos de nivell C1 i C2. El registre i la
-      // naturalitat del catala avancat es justament on es nota el model, i
-      // un dictat son unes poques centenes de tokens: la diferencia de preu
-      // es de decimes de centim, molt per sota del que costa la locucio.
-      model: "claude-opus-5",
-      // Escriure un text curt amb unes restriccions clares no demana gaire
-      // deliberacio, i baixar l'esforc el fa mes rapid i mes barat.
-      output_config: { effort: "low" },
-      max_tokens: 1000,
-      messages,
-    });
-    const block = message.content.find((b) => b.type === "text");
-    return block && "text" in block ? block.text.trim() : "";
+  // El reintent es una segona conversa, no un fil: aixi funciona igual amb
+  // qualsevol motor i no depen que sapiga mantenir el context.
+  async function ask(text: string) {
+    return (await askText(text, 1000)) ?? "";
   }
 
   try {
-    let text = await ask([{ role: "user", content: prompt }]);
-    if (!text) throw new Error("Resposta buida de Claude");
+    let text = await ask(prompt);
+    if (!text) throw new Error("Cap motor de text ha respost");
 
     // Els models sovint es queden curts o es passen: si el text surt del rang,
     // se li demana una correcció abans de donar-lo per bo.
     const words = countWords(text);
     if (words < length.min || words > length.max) {
-      const retry = await ask([
-        { role: "user", content: prompt },
-        { role: "assistant", content: text },
-        {
-          role: "user",
-          content: `Aquest text té ${words} paraules i el rang demanat és de ${length.min} a ${length.max}. Reescriu-lo ${
-            words > length.max ? "més curt" : "més llarg"
-          } respectant el rang, la mateixa regla ortogràfica i el mateix nivell. Respon només amb el text.`,
-        },
-      ]);
+      const retry = await ask(
+        `${prompt}
+
+Aquest intent anterior té ${words} paraules i el rang demanat és de ${length.min} a ${length.max}:
+"""${text}"""
+Reescriu-lo ${
+          words > length.max ? "més curt" : "més llarg"
+        } respectant el rang, la mateixa regla ortogràfica i el mateix nivell. Respon només amb el text.`
+      );
       const retryWords = countWords(retry);
       // Es queda amb el reintent només si realment s'acosta més al rang.
       if (retry && Math.abs(retryWords - (length.min + length.max) / 2) < Math.abs(words - (length.min + length.max) / 2)) {
