@@ -66,7 +66,18 @@ async function loadAdminData(filters: { schoolId?: string; q?: string }) {
         }),
         prisma.user.findMany({
           where: { ...schoolFilter, ...searchFilter },
-          select: { id: true, name: true, email: true, role: true, schoolId: true },
+          // Qui es i que ha fet: sense la data d'alta i l'activitat, la taula
+          // diu qui existeix pero no si el producte serveix a algu.
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            schoolId: true,
+            createdAt: true,
+            learningLevel: true,
+            _count: { select: { submissions: true } },
+          },
           orderBy: [{ role: "asc" }, { email: "asc" }],
         }),
         prisma.user.count(),
@@ -186,8 +197,9 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                       <TableHead>Persona</TableHead>
                       <TableHead>Rol</TableHead>
                       <TableHead>Centre</TableHead>
+                      <TableHead>Alta</TableHead>
+                      <TableHead>Dictats fets</TableHead>
                       <TableHead />
-                                         <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -200,7 +212,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                               <span className="text-xs text-muted-foreground">{u.email}</span>
                             </div>
                           </TableCell>
-                          <TableCell colSpan={3} className="p-0">
+                          <TableCell colSpan={2} className="p-0">
                             <form action={updateUserRole} className="flex flex-wrap items-center gap-2 p-2">
                               <input type="hidden" name="userId" value={u.id} />
                               <select
@@ -232,6 +244,25 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                                 Desar
                               </Button>
                             </form>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {u.createdAt.toLocaleDateString("ca-ES", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {u._count.submissions > 0 ? (
+                              <span className="font-medium">{u._count.submissions}</span>
+                            ) : (
+                              <span className="text-muted-foreground">cap</span>
+                            )}
+                            {u.learningLevel && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {u.learningLevel}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             {/* Treure algu d'un centre el deixa existint sense escola.

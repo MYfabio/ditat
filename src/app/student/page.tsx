@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DbNotice } from "@/components/dashboard/db-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationQueue, type DictationForStudent } from "./dictation-queue";
+import { Historial, type EntregaHistorial } from "./historial";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
 import { AutonomousPanel } from "./autonomous-panel";
@@ -121,6 +121,33 @@ export default async function StudentPage() {
   // Nomes te sentit per a qui no va a través d'un centre.
   const autonom = !!session?.user && !session.user.classGroupId;
   const subscripcio = autonom ? await estatDelMes(session!.user.id) : null;
+
+  // El que el client necessita per ensenyar la correccio i poder repetir.
+  const historial: EntregaHistorial[] = submissions.map((s) => {
+    const dades = (s.correctedData ?? {}) as {
+      feedback?: string;
+      errors?: { paraulaOriginal: string; paraulaEscrita: string; explicacio: string }[];
+    };
+    return {
+      id: s.id,
+      data: s.createdAt.toLocaleDateString("ca-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      score: s.score,
+      escrit: s.ocrText,
+      feedback: dades.feedback ?? null,
+      errors: dades.errors ?? [],
+      dictat: {
+        id: s.dictation.id,
+        title: s.dictation.title,
+        rawText: s.dictation.rawText,
+        hasAudio: s.dictation.wantsAudio,
+        playback: (s.dictation.playbackSettings ?? undefined) as Record<string, unknown> | undefined,
+      },
+    };
+  });
 
   const entregats = new Set(submissions.map((s) => s.dictationId));
   const pendents: DictationForStudent[] = dictations
@@ -243,25 +270,7 @@ export default async function StudentPage() {
               </p>
             )}
 
-            {submissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Encara no has fet cap dictat. Comença&apos;n un aquí a sobre!
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {submissions.slice(0, 8).map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                  >
-                    <span>{s.dictation.title}</span>
-                    <Badge variant={s.score !== null && s.score >= 70 ? "default" : "secondary"}>
-                      {s.score !== null ? `${s.score}%` : "Pendent"}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <Historial entregues={historial} />
           </CardContent>
         </Card>
 

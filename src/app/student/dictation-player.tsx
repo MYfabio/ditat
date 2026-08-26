@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { TextMarcat } from "@/components/dictation/text-marcat";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -585,16 +586,31 @@ export function DictationPlayer({
             )}
 
             <div className="rounded-md border p-4">
-              <p className="mb-3 text-sm font-medium">Autocorregeix el teu dictat</p>
+              <p className="mb-1 text-sm font-medium">El text correcte, al costat del teu</p>
+              <p className="mb-3 text-xs text-muted-foreground">
+                {result.errors.length > 0
+                  ? "Les paraules marcades son les que no coincideixen."
+                  : "No hi ha cap diferencia: els dos textos son iguals."}
+              </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Text original del dictat</p>
-                  <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">{rawText}</p>
+                  <p className="mb-1 text-xs text-muted-foreground">Com s&apos;havia d&apos;escriure</p>
+                  <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">
+                    <TextMarcat
+                      text={rawText}
+                      paraules={result.errors.map((e) => e.paraulaOriginal)}
+                      to="be"
+                    />
+                  </p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">El que has escrit</p>
                   <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">
-                    {result.ocrText || "Sense text detectat."}
+                    <TextMarcat
+                      text={result.ocrText || "Sense text detectat."}
+                      paraules={result.errors.map((e) => e.paraulaEscrita)}
+                      to="malament"
+                    />
                   </p>
                 </div>
               </div>
