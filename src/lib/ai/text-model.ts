@@ -37,6 +37,11 @@ async function askGemini(prompt: string, maxTokens: number): Promise<string> {
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
+          // Escriure un dictat o comparar dos textos no demana deliberar:
+          // amb el raonament actiu, el model es gastava tot el pressupost
+          // pensant i la resposta sortia tallada a mitja frase. Sense ell,
+          // respon sencer, mes rapid i mes barat.
+          thinkingConfig: { thinkingBudget: 0 },
           // El pressupost de tokens el comparteixen el raonament i la resposta.
           // Amb el limit just, el model es gasta pensant i el text surt tallat
           // a mitja frase: un dictat de 200 paraules arribava a 23. Es dona
