@@ -200,7 +200,7 @@ export default async function StudentPage() {
             <TabsTrigger value="perfer">
               Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
             </TabsTrigger>
-            <TabsTrigger value="progres">El meu progres</TabsTrigger>
+            <TabsTrigger value="progres">Els meus progressos</TabsTrigger>
             {autonom && <TabsTrigger value="compte">El meu compte</TabsTrigger>}
           </TabsList>
 

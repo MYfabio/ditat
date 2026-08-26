@@ -34,6 +34,20 @@ export type LearningProfile = {
   curriculumProgress: { expected: number; mastered: number; pending: string[] };
   observations: ObservationSignal[];
   summaryText: string;
+  /**
+   * Com li va anant a aquesta persona, comparada nomes amb ella mateixa.
+   *
+   * El docent no necessita saber qui es el millor de la classe: aixo ja ho
+   * sap, i ordenar l'alumnat per nota no ajuda ningu. El que no pot veure a
+   * simple vista es si algu que treu un 60% ve de treure'n 40 —va molt be— o
+   * de treure'n 80 —alguna cosa passa.
+   */
+  progressio: {
+    punts: number[];
+    tendencia: "millora" | "estable" | "empitjora" | null;
+    inici: number;
+    ara: number;
+  };
 };
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
@@ -188,6 +202,27 @@ export function buildLearningProfile(
     }
   }
 
+  // Es compara la primera meitat dels dictats amb la segona: amb poques dades
+  // una recta de regressio balla massa, i mitja i mitja aguanta millor que un
+  // dictat especialment bo o dolent no giri la conclusio.
+  const cronologic = [...evaluated].sort(
+    (x, y) => x.createdAt.getTime() - y.createdAt.getTime()
+  );
+  const punts = cronologic.map((x) => x.score ?? 0);
+  const MINIM_PER_VEURE_TENDENCIA = 4;
+  let tendencia: "millora" | "estable" | "empitjora" | null = null;
+  let inici = 0;
+  let ara = 0;
+  if (punts.length >= MINIM_PER_VEURE_TENDENCIA) {
+    const tall = Math.floor(punts.length / 2);
+    const mitjana = (v: number[]) => Math.round(v.reduce((t, n) => t + n, 0) / v.length);
+    inici = mitjana(punts.slice(0, tall));
+    ara = mitjana(punts.slice(tall));
+    const salt = ara - inici;
+    // Cinc punts: per sota d'aixo es soroll, no una millora.
+    tendencia = salt >= 5 ? "millora" : salt <= -5 ? "empitjora" : "estable";
+  }
+
   const summaryText = totalSubmissions
     ? `${totalSubmissions} dictats corregits amb una mitjana del ${averageScore}%. ${
         masteredCount
@@ -208,6 +243,7 @@ export function buildLearningProfile(
     },
     observations,
     summaryText,
+    progressio: { punts, tendencia, inici, ara },
   };
 }
 

@@ -68,6 +68,14 @@ async function loadTeacherData(
         include: {
           improvementReports: { orderBy: { createdAt: "desc" }, take: 1 },
           classGroup: { select: { name: true } },
+          // L'evolucio es calcula aqui i no es llegeix de l'informe guardat:
+          // un informe antic no la porta, i el docent veuria el requadre buit
+          // fins que algu el regenerés.
+          submissions: {
+            where: { score: { not: null } },
+            select: { score: true },
+            orderBy: { createdAt: "asc" },
+          },
         },
       }),
       schoolId
@@ -82,6 +90,24 @@ async function loadTeacherData(
   } catch {
     return { dbAvailable: false as const };
   }
+}
+
+/**
+ * Compara la primera meitat dels dictats amb la segona.
+ *
+ * Amb poques dades una recta de regressio balla massa; mitja i mitja aguanta
+ * millor que un dictat especialment bo o dolent no giri la conclusio.
+ */
+function evolucioDe(punts: number[]): StudentProfileView["progressio"] {
+  const MINIM = 4;
+  if (punts.length < MINIM) return { punts, tendencia: null, inici: 0, ara: 0 };
+  const tall = Math.floor(punts.length / 2);
+  const mitjana = (v: number[]) => Math.round(v.reduce((t, n) => t + n, 0) / v.length);
+  const inici = mitjana(punts.slice(0, tall));
+  const ara = mitjana(punts.slice(tall));
+  const salt = ara - inici;
+  // Cinc punts: per sota d'aixo es soroll, no una millora.
+  return { punts, tendencia: salt >= 5 ? "millora" : salt <= -5 ? "empitjora" : "estable", inici, ara };
 }
 
 export default async function TeacherPage(props: PageProps<"/teacher">) {
@@ -137,6 +163,7 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
               pending: [],
             },
             observations: metrics?.observations ?? [],
+            progressio: evolucioDe(student.submissions.map((x) => x.score ?? 0)),
           };
         })
         .filter((p) => p.totalSubmissions > 0)

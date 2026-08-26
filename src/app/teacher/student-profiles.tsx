@@ -11,7 +11,52 @@ export type StudentProfileView = {
   perRule: { rule: string; averageScore: number; attempts: number; mastered: boolean }[];
   curriculumProgress: { expected: number; mastered: number; pending: string[] };
   observations: { key: string; label: string; detail: string }[];
+  progressio: {
+    punts: number[];
+    tendencia: "millora" | "estable" | "empitjora" | null;
+    inici: number;
+    ara: number;
+  };
 };
+
+/**
+ * L'evolucio d'una persona, comparada nomes amb ella mateixa.
+ *
+ * Sense eixos ni numeros a sobre: no es una grafica per llegir-hi valors, es
+ * per veure d'un cop d'ull si la linia puja o baixa. El que importa ho diu la
+ * frase de sota amb paraules.
+ */
+function Evolucio({ punts }: { punts: number[] }) {
+  if (punts.length < 2) return null;
+  const ample = 120;
+  const alt = 28;
+  const max = Math.max(...punts, 100);
+  const min = Math.min(...punts, 0);
+  const rang = max - min || 1;
+  const cami = punts
+    .map((p, i) => {
+      const x = (i / (punts.length - 1)) * ample;
+      const y = alt - ((p - min) / rang) * alt;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg
+      viewBox={`0 0 ${ample} ${alt}`}
+      className="h-7 w-[120px] shrink-0 overflow-visible"
+      role="img"
+      aria-label={`Evolucio de les ultimes ${punts.length} puntuacions`}
+    >
+      <path d={cami} fill="none" stroke="currentColor" strokeWidth="1.5" className="text-primary" />
+      <circle
+        cx={ample}
+        cy={alt - ((punts[punts.length - 1] - min) / rang) * alt}
+        r="2.5"
+        className="fill-primary"
+      />
+    </svg>
+  );
+}
 
 export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }) {
   if (profiles.length === 0) {
@@ -79,6 +124,31 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
               </p>
             </CardHeader>
             <CardContent className="space-y-2">
+              {p.progressio.tendencia && (
+                <div className="mb-3 space-y-1 rounded-md border bg-muted/30 p-2">
+                  <p className="text-xs font-medium">Progressos</p>
+                  <div className="flex items-center gap-3">
+                  <Evolucio punts={p.progressio.punts} />
+                  <p className="text-xs">
+                    {p.progressio.tendencia === "millora" ? (
+                      <>
+                        Va a <strong className="text-emerald-700 dark:text-emerald-400">millor</strong>
+                        : del {p.progressio.inici}% al {p.progressio.ara}% de mitjana.
+                      </>
+                    ) : p.progressio.tendencia === "empitjora" ? (
+                      <>
+                        Ha <strong className="text-amber-700 dark:text-amber-400">baixat</strong>: del{" "}
+                        {p.progressio.inici}% al {p.progressio.ara}% de mitjana.
+                      </>
+                    ) : (
+                      <>
+                        S&apos;hi manté: al voltant del {p.progressio.ara}% des del principi.
+                      </>
+                    )}
+                    </p>
+                  </div>
+                </div>
+              )}
               {p.perRule.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sense dades per regla encara.</p>
               ) : (
