@@ -8,7 +8,7 @@ import {
 export type SubmissionForProfile = {
   score: number | null;
   createdAt: Date;
-  dictation: { targetRule: string; gradeLevel: string };
+  dictation: { targetRule: string; gradeLevel: string; rawText?: string };
   correctedData: unknown;
 };
 
@@ -21,7 +21,7 @@ export type RuleStat = {
 };
 
 export type ObservationSignal = {
-  key: "reversals" | "persistent" | "omissions";
+  key: "reversals" | "persistent" | "omissions" | "cansament" | "constant";
   label: string;
   detail: string;
 };
@@ -51,6 +51,15 @@ export type LearningProfile = {
 };
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
+
+/** Compara paraules sense accents ni puntuacio, per situar-les dins del text. */
+function netejaParaula(p: string) {
+  return p
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+}
 
 function readErrors(correctedData: unknown): EvaluationError[] {
   if (!correctedData || typeof correctedData !== "object") return [];
@@ -172,6 +181,36 @@ export function buildLearningProfile(
     (r) => perRule.find((p) => p.rule === r.value)?.mastered
   ).length;
 
+  // On cauen les errades dins del text, no nomes quantes n'hi ha.
+  //
+  // Els mateixos errors —omissions, substitucions, inversions— apareixen tant
+  // en dislexia com en TDAH, i comptar-los no els distingeix. El que si els
+  // separa es la distribucio: qui te una dificultat instrumental falla igual
+  // des de la primera linia, mentre que qui es cansa d'atendre comença be i es
+  // va deteriorant a mesura que avança el text.
+  //
+  // Aixo NO diagnostica res, i no s'anomena cap trastorn enlloc: nomes descriu
+  // on cauen les errades, que es una cosa que el docent no pot veure a ull
+  // repassant dictats i que li serveix per parlar amb l'equip d'orientacio.
+  let errPrimeraMeitat = 0;
+  let errSegonaMeitat = 0;
+  for (const sub of evaluated) {
+    const text = sub.dictation.rawText;
+    if (!text) continue;
+    const paraules = text.split(/\s+/).filter(Boolean);
+    if (paraules.length < 20) continue;
+    const migPunt = Math.floor(paraules.length / 2);
+    for (const err of readErrors(sub.correctedData)) {
+      const idx = paraules.findIndex(
+        (w) => netejaParaula(w) === netejaParaula(err.paraulaOriginal)
+      );
+      if (idx === -1) continue;
+      if (idx < migPunt) errPrimeraMeitat++;
+      else errSegonaMeitat++;
+    }
+  }
+  const errSituades = errPrimeraMeitat + errSegonaMeitat;
+
   const observations: ObservationSignal[] = [];
   if (totalSubmissions >= MIN_SUBMISSIONS_FOR_OBSERVATIONS) {
     if (reversals >= MIN_REVERSALS) {
@@ -188,6 +227,24 @@ export function buildLearningProfile(
         detail: `S'han detectat ${omissions} paraules escrites amb lletres omeses.`,
       });
     }
+    // Cal un grapat d'errades situades perque la proporcio vulgui dir res.
+    if (errSituades >= 12) {
+      const proporcioFinal = errSegonaMeitat / errSituades;
+      if (proporcioFinal >= 0.68) {
+        observations.push({
+          key: "cansament",
+          label: "Les errades es concentren al final dels dictats",
+          detail: `De ${errSituades} errades situades, ${errSegonaMeitat} cauen a la segona meitat del text. Comença be i es va deteriorant a mesura que avança.`,
+        });
+      } else if (proporcioFinal >= 0.4 && proporcioFinal <= 0.6) {
+        observations.push({
+          key: "constant",
+          label: "Les errades es reparteixen per tot el dictat",
+          detail: `De ${errSituades} errades situades, ${errPrimeraMeitat} son a la primera meitat i ${errSegonaMeitat} a la segona: falla igual des del principi, no per cansament.`,
+        });
+      }
+    }
+
     const persistent = perRule.filter(
       (r) => r.attempts >= PERSISTENT_MIN_ATTEMPTS && r.averageScore < PERSISTENT_MAX_SCORE
     );

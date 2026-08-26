@@ -85,7 +85,9 @@ export function StudentProfiles({ profiles }: { profiles: StudentProfileView[] }
               <Info className="mt-0.5 size-4 shrink-0" />
               <p>
                 Això <strong className="text-foreground">no es cap diagnòstic</strong>. dictats.cat
-                només descriu patrons observats als dictats. Només un professional
+                només descriu patrons observats als dictats —quines errades es
+                repeteixen i on cauen dins del text—, i no anomena cap trastorn.
+                Els mateixos errors poden tenir causes molt diferents. Només un professional
                 (psicopedagog/a o logopeda) pot valorar si hi ha una dificultat específica
                 d&apos;aprenentatge. Fes servir aquesta informació unicament com a punt de
                 partida per parlar amb l&apos;equip d&apos;orientació del centre.

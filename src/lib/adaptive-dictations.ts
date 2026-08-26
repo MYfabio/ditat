@@ -47,7 +47,7 @@ export async function loadLearningProfile(studentId: string): Promise<LearningPr
   const submissions = await prisma.submission.findMany({
     where: { studentId },
     include: {
-      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true } },
+      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true, rawText: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -70,7 +70,7 @@ export async function refreshLearningProfile(studentId: string): Promise<Learnin
   const submissions = await prisma.submission.findMany({
     where: { studentId },
     include: {
-      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true } },
+      dictation: { select: { targetRule: true, targetSubskill: true, gradeLevel: true, rawText: true } },
     },
     orderBy: { createdAt: "asc" },
   });
