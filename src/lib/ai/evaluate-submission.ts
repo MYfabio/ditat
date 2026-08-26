@@ -58,7 +58,7 @@ export async function evaluateSubmission(
   originalText: string,
   ocrText: string
 ): Promise<EvaluationResult> {
-  if (!hasTextModel) {
+  if (!hasTextModel()) {
     return mockEvaluate(originalText, ocrText);
   }
 

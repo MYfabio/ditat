@@ -1,4 +1,4 @@
-import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
+import { getAnthropicClient } from "@/lib/ai/clients";
 
 /**
  * Un sol lloc per demanar text a una IA, faci servir el motor que faci servir.
@@ -15,19 +15,29 @@ import { getAnthropicClient, hasAnthropicKey } from "@/lib/ai/clients";
 // Google retira models sense avisar: el 2.5-flash va deixar d'acceptar
 // comptes nous i tornava un 404 amb el nom del substitut. Es deixa canviable
 // per variable per no haver de desplegar quan torni a passar.
-const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-3.6-flash";
+const gemininModel = () => process.env.GEMINI_TEXT_MODEL || "gemini-3.6-flash";
 
-export const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+// Es llegeixen dins de funcions i no com a constants del modul: Next.js pot
+// fixar el valor de process.env en compilar, i llavors una clau que hi es al
+// servidor queda com a inexistent per sempre. Passava exactament aixo: ni
+// s'intentava cridar Gemini, i com que no s'intentava, tampoc no hi havia cap
+// error als registres que ho delates.
+export function hasGeminiKey() {
+  return !!process.env.GEMINI_API_KEY;
+}
+
+export function hasAnthropic() {
+  return !!process.env.ANTHROPIC_API_KEY;
+}
 
 /** Cert si hi ha algun motor de text disponible; si no, toca text de reserva. */
-export const hasTextModel = hasAnthropicKey || hasGeminiKey;
-
-/** Quin motor respon ara mateix, per poder dir-ho als registres. */
-export const textProvider = hasAnthropicKey ? "anthropic" : hasGeminiKey ? "gemini" : "cap";
+export function hasTextModel() {
+  return hasAnthropic() || hasGeminiKey();
+}
 
 async function askGemini(prompt: string, maxTokens: number): Promise<string> {
   const resposta = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${gemininModel()}:generateContent`,
     {
       method: "POST",
       headers: {
@@ -99,8 +109,8 @@ export async function askText(prompt: string, maxTokens = 1000): Promise<string 
   // servei o una quota exhaurida en un motor no ha de deixar l'aplicacio
   // servint textos de reserva si l'altre motor respon perfectament.
   const motors: [string, () => Promise<string>][] = [];
-  if (hasAnthropicKey) motors.push(["anthropic", () => askAnthropic(prompt, maxTokens)]);
-  if (hasGeminiKey) motors.push(["gemini", () => askGemini(prompt, maxTokens)]);
+  if (hasAnthropic()) motors.push(["anthropic", () => askAnthropic(prompt, maxTokens)]);
+  if (hasGeminiKey()) motors.push(["gemini", () => askGemini(prompt, maxTokens)]);
 
   for (const [nom, crida] of motors) {
     try {

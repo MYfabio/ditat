@@ -24,7 +24,7 @@ export async function generateDictationText(
   const focus = targetSubskill ? skillLabel(targetSubskill) : ruleLabel(targetRule);
   const title = `Dictat: ${focus} (${gradeLabel(gradeLevel)})`;
 
-  if (!hasTextModel) {
+  if (!hasTextModel()) {
     return { text: getMockDictationText(targetRule, gradeLevel), title, mocked: true };
   }
 
