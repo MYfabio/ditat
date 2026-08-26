@@ -55,7 +55,7 @@ async function askGemini(prompt: string, maxTokens: number): Promise<string> {
           //
           // Apagar el raonament seria mes net, pero el 3.6-flash no accepta
           // thinkingConfig i respon 400.
-          maxOutputTokens: Math.max(maxTokens * 8, 8000),
+          maxOutputTokens: Math.max(maxTokens * 24, 24000),
           temperature: 0.9,
         },
       }),
