@@ -21,10 +21,13 @@ export function RuleHelpPanel({
   ajuda,
   regla,
   obertPerDefecte = false,
+  versioCurta = false,
 }: {
   ajuda: AjudaRegla;
   regla: string;
   obertPerDefecte?: boolean;
+  /** Versio reduida per a qui te adaptacions: menys text i menys exemples. */
+  versioCurta?: boolean;
 }) {
   const [obert, setObert] = useState(obertPerDefecte);
 
@@ -49,22 +52,32 @@ export function RuleHelpPanel({
 
       {obert && (
         <div className="space-y-3 border-t border-primary/20 px-3 py-3 text-sm">
-          <p>{ajuda.norma}</p>
+          <p className={versioCurta ? "text-base font-medium leading-relaxed" : undefined}>
+            {versioCurta ? ajuda.normaCurta : ajuda.norma}
+          </p>
 
+          {/* Menys exemples i mes grans: amb dos n'hi ha prou per veure el
+              patro, i una llista llarga nomes es mes text per llegir. */}
           <ul className="space-y-1">
-            {ajuda.exemples.map((e) => (
-              <li key={e} className="rounded bg-background/70 px-2 py-1 font-mono text-xs">
+            {(versioCurta ? ajuda.exemples.slice(0, 2) : ajuda.exemples).map((e) => (
+              <li
+                key={e}
+                className={`rounded bg-background/70 px-2 py-1 font-mono ${
+                  versioCurta ? "text-sm" : "text-xs"
+                }`}
+              >
                 {e}
               </li>
             ))}
           </ul>
 
-          {ajuda.parany && (
+          {!versioCurta && ajuda.parany && (
             <p className="rounded-md border border-amber-400/40 bg-amber-50/60 p-2 text-xs dark:bg-amber-900/20">
               <strong>Compte:</strong> {ajuda.parany}
             </p>
           )}
 
+          {!versioCurta && (
           <p className="text-xs text-muted-foreground">
             Si en vols mes:{" "}
             <a
@@ -77,6 +90,7 @@ export function RuleHelpPanel({
             </a>
             .
           </p>
+          )}
         </div>
       )}
     </div>

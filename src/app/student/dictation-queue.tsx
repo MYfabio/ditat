@@ -18,6 +18,8 @@ export type DictationForStudent = {
   targetRule?: string;
   /** Si el repas s'ha d'obrir sol per a aquest alumne i aquesta regla. */
   ajudaOberta?: boolean;
+  /** Repas reduit: qui te adaptacions no ha de llegir un bloc dens. */
+  ajudaCurta?: boolean;
 };
 
 /**
@@ -70,6 +72,7 @@ export function DictationQueue({
         playback={d.playback}
         targetRule={d.targetRule}
         ajudaOberta={d.ajudaOberta}
+        ajudaCurta={d.ajudaCurta}
       />
 
       {altres.length > 0 && (

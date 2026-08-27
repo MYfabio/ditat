@@ -182,6 +182,7 @@ export default async function StudentPage() {
       hasAudio: d.wantsAudio,
       targetRule: d.targetRule ?? undefined,
       ajudaOberta: repasObert(d.targetRule),
+      ajudaCurta: teAdaptacions,
       personalised: !!d.targetStudentId,
       playback: parsePlaybackSettings(d.playbackSettings),
     }));

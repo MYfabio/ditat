@@ -76,6 +76,7 @@ export function DictationPlayer({
   playback = DEFAULT_PLAYBACK,
   targetRule,
   ajudaOberta = false,
+  ajudaCurta = false,
 }: {
   dictationId: string;
   title: string;
@@ -88,6 +89,7 @@ export function DictationPlayer({
   playback?: PlaybackSettings;
   targetRule?: string;
   ajudaOberta?: boolean;
+  ajudaCurta?: boolean;
 }) {
   const router = useRouter();
   const chunks = useMemo(
@@ -484,6 +486,7 @@ export function DictationPlayer({
               ajuda={ajudaPerRegla(targetRule)!}
               regla={ruleLabel(targetRule)}
               obertPerDefecte={ajudaOberta}
+              versioCurta={ajudaCurta}
             />
           </div>
         )}
