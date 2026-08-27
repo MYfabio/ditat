@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { TextMarcat } from "@/components/dictation/text-marcat";
+import { RuleHelpPanel } from "@/components/dictation/rule-help-panel";
+import { ajudaPerRegla } from "@/lib/rule-help";
+import { ruleLabel } from "@/lib/dictation-rules";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -71,6 +74,8 @@ export function DictationPlayer({
   personalised = false,
   sentencesPerChunk = 2,
   playback = DEFAULT_PLAYBACK,
+  targetRule,
+  ajudaOberta = false,
 }: {
   dictationId: string;
   title: string;
@@ -81,6 +86,8 @@ export function DictationPlayer({
   sentencesPerChunk?: number;
   /** Velocitat, repeticions i pantalla oculta que ha fixat el docent. */
   playback?: PlaybackSettings;
+  targetRule?: string;
+  ajudaOberta?: boolean;
 }) {
   const router = useRouter();
   const chunks = useMemo(
@@ -468,6 +475,18 @@ export function DictationPlayer({
 
       <div className="border-t pt-4">
         <p className="mb-3 text-sm font-medium">Com vols fer el dictat?</p>
+
+        {/* El repas de la norma va abans de tot: un cop ha comencat a
+            escoltar, ja no hi torna. */}
+        {!result && targetRule && ajudaPerRegla(targetRule) && (
+          <div className="mb-4">
+            <RuleHelpPanel
+              ajuda={ajudaPerRegla(targetRule)!}
+              regla={ruleLabel(targetRule)}
+              obertPerDefecte={ajudaOberta}
+            />
+          </div>
+        )}
 
         {!result && (
           <>

@@ -14,6 +14,10 @@ export type DictationForStudent = {
   hasAudio: boolean;
   personalised: boolean;
   playback: PlaybackSettings;
+  /** La regla que aquest dictat posa a prova, per poder-la repassar abans. */
+  targetRule?: string;
+  /** Si el repas s'ha d'obrir sol per a aquest alumne i aquesta regla. */
+  ajudaOberta?: boolean;
 };
 
 /**
@@ -64,6 +68,8 @@ export function DictationQueue({
         personalised={d.personalised}
         sentencesPerChunk={sentencesPerChunk}
         playback={d.playback}
+        targetRule={d.targetRule}
+        ajudaOberta={d.ajudaOberta}
       />
 
       {altres.length > 0 && (

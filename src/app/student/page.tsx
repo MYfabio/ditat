@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { Historial, type EntregaHistorial } from "./historial";
+import { ajudaObertaPerDefecte } from "@/lib/rule-help";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
 import { AutonomousPanel } from "./autonomous-panel";
 import { SubscriptionCard } from "./subscription-card";
-import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE } from "@/lib/needs-profile";
+import { parseNeedsProfile, sentencesPerChunk, EMPTY_NEEDS_PROFILE, hasAnyAdaptation} from "@/lib/needs-profile";
 import { parsePlaybackSettings } from "@/lib/playback-settings";
 import { estatDelMes, DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
 import { stripeConfigurat } from "@/lib/stripe";
@@ -42,6 +43,7 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
           wantsAudio: true,
           targetStudentId: true,
           playbackSettings: true,
+          targetRule: true,
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -149,6 +151,27 @@ export default async function StudentPage() {
     };
   });
 
+  // Com li va anant a cada regla, per decidir si el repas s'obre sol.
+  const perRegla = new Map<string, { intents: number; suma: number }>();
+  for (const s of submissions) {
+    const regla = s.dictation.targetRule;
+    if (!regla || s.score === null) continue;
+    const f = perRegla.get(regla) ?? { intents: 0, suma: 0 };
+    f.intents += 1;
+    f.suma += s.score;
+    perRegla.set(regla, f);
+  }
+  const teAdaptacions = hasAnyAdaptation(needs);
+  function repasObert(regla: string | null | undefined) {
+    if (!regla) return false;
+    const f = perRegla.get(regla);
+    return ajudaObertaPerDefecte({
+      mitjanaEnAquestaRegla: f && f.intents ? Math.round(f.suma / f.intents) : null,
+      intentsEnAquestaRegla: f?.intents ?? 0,
+      teAdaptacions,
+    });
+  }
+
   const entregats = new Set(submissions.map((s) => s.dictationId));
   const pendents: DictationForStudent[] = dictations
     .filter((d) => !entregats.has(d.id))
@@ -157,6 +180,8 @@ export default async function StudentPage() {
       title: d.title,
       rawText: d.rawText,
       hasAudio: d.wantsAudio,
+      targetRule: d.targetRule ?? undefined,
+      ajudaOberta: repasObert(d.targetRule),
       personalised: !!d.targetStudentId,
       playback: parsePlaybackSettings(d.playbackSettings),
     }));
