@@ -29,6 +29,16 @@ export type AjudaRegla = {
   exemples: string[];
   /** El parany tipic, que es on es perden gairebe totes les faltes. */
   parany?: string;
+  /**
+   * La mateixa norma per a primaria: sense metallenguatge i amb exemples que
+   * es puguin veure.
+   *
+   * A una criatura de set anys, "so sord" o "vocal atona" no li diuen res: es
+   * una explicacio que li demana aprendre dues coses en lloc d'una. I a un
+   * opositor de C1 li passa el contrari, que la norma basica ja la sap i el
+   * que necessita son les excepcions, que son al camp "parany".
+   */
+  primaria?: { norma: string; exemples: string[] };
 };
 
 export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
@@ -39,6 +49,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
       "Davant de e, i: qu i gu. Davant de a, o, u: c i g.",
     exemples: ["casa, cosa, cul", "queixa, quilo", "gat, got, gust", "guerra, guitarra"],
     parany: "La u de qu i gu no sona: quilo es diu «kilo», no «kuilo».",
+    primaria: {
+      norma:
+        "Davant de la e i de la i, la c es torna qu i la g es torna gu. Davant de la a, la o i la u, es queden com son.",
+      exemples: ["casa → queixa", "gat → guerra"],
+    }
   },
   "h-muda": {
     norma:
@@ -48,6 +63,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["home, hivern, hora, humit", "ahir, prohibir", "sense h: os, ou, avui, arbre"],
     parany:
       "Haver sempre du h (he, has, ha, hem, heu, han). A veure (de mirar) no en du cap.",
+    primaria: {
+      norma:
+        "La h no es sent gens, pero hi ha paraules que la porten. No hi ha cap truc: t'has de fixar quan les llegeixes.",
+      exemples: ["home, hora, hivern", "os, ou, avui (sense h)"],
+    }
   },
   "j-g": {
     norma:
@@ -57,6 +77,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["jardí, jove, jutge", "gent, girar, gener"],
     parany:
       "Unes quantes paraules porten j davant de e contra la regla: jersei, jeroglífic, majestat, injecció.",
+    primaria: {
+      norma:
+        "Davant de la e i de la i escrivim g. Davant de la a, la o i la u escrivim j.",
+      exemples: ["gent, girar", "jardí, jove, jugar"],
+    }
   },
   "s-ss-c-z": {
     norma:
@@ -66,6 +91,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["sal, pensar, passar", "cel, cinc, caça", "casa, camisa", "zona, onze"],
     parany:
       "Entre vocals, una sola s sona sonora i dues sones sordes: «casa» i «cassa» no són la mateixa paraula.",
+    primaria: {
+      norma:
+        "Entre dues vocals, una sola s sona fluixeta i dues s sonen fortes.",
+      exemples: ["casa (fluixeta)", "passar (forta)"],
+    }
   },
   "b-v": {
     norma:
@@ -75,6 +105,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["blanc, brau, ambient", "canvi, envestir", "cantava, jugaves, miràvem"],
     parany:
       "Si dubtes, busca una paraula de la mateixa família on se senti: llobató t'indica que és llop, i «bevia» ve de beure.",
+    primaria: {
+      norma:
+        "Sempre b davant de la l i de la r. I els verbs que acaben en -ava sempre van amb v.",
+      exemples: ["blanc, brau", "cantava, jugava"],
+    }
   },
   "x-ix": {
     norma:
@@ -83,6 +118,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
       "Darrere de a, e, o, u: ix. Al principi: x.",
     exemples: ["xarxa, xocolata, panxa", "caixa, peix, disbauxa", "cotxe, despatx"],
     parany: "A «caixa» la i no és una vocal a part: només marca el so de la x.",
+    primaria: {
+      norma:
+        "Darrere de la a, la e, la o i la u escrivim ix. Al comencament de paraula, x tota sola.",
+      exemples: ["caixa, peix", "xarxa, xocolata"],
+    }
   },
   "l-l": {
     norma:
@@ -92,6 +132,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["col·legi, intel·ligent", "pel·lícula, novel·la", "síl·laba, il·lusió"],
     parany:
       "El punt va al mig i a mitja alçada (l·l), no és ni un punt final ni un guió. Al teclat: Ctrl i el punt, o copia'l d'aquí.",
+    primaria: {
+      norma:
+        "Son dues eles amb un puntet al mig. Es una sola lletra que es diu una mica mes llarga.",
+      exemples: ["col·legi", "pel·lícula"],
+    }
   },
   apostrofacio: {
     norma:
@@ -101,6 +146,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["l'amic, l'home, l'illa", "d'aigua, d'hora", "la idea, la universitat, la humitat"],
     parany:
       "Àtona vol dir que no hi cau l'accent de la paraula: per això és «la idea» però «l'illa», on la i sí que sona forta.",
+    primaria: {
+      norma:
+        "Quan la paraula seguent comenca per vocal o per h, l'article es menja la lletra i posa un apostrof.",
+      exemples: ["el amic → l'amic", "de aigua → d'aigua"],
+    }
   },
   accentuacio: {
     norma:
@@ -110,6 +160,11 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["cafè, cançó, també", "arbre (no en du), làmpada", "música, química, història"],
     parany:
       "La a tònica sempre és oberta: mai no veuràs «á» en català.",
+    primaria: {
+      norma:
+        "L'accent obert (à, è, ò) fa obrir molt la boca. El tancat (é, ó) la deixa mig tancada.",
+      exemples: ["cafè (obert)", "camió (tancat)"],
+    }
   },
   dieresi: {
     norma:
@@ -119,12 +174,44 @@ export const AJUDES_PER_REGLA: Record<string, AjudaRegla> = {
     exemples: ["qüestió, pingüí, aigües", "raïm, veïna, agraïm"],
     parany:
       "No en duen els infinitius, gerundis, futurs i condicionals acabats en -ir: conduir, conduint, conduirà.",
+    primaria: {
+      norma:
+        "Els dos puntets volen dir que aquella lletra si que es diu.",
+      exemples: ["pingüí", "raïm"],
+    }
   },
 };
 
 /** L'ajuda d'una regla, si en tenim d'escrita. */
 export function ajudaPerRegla(regla: string): AjudaRegla | null {
   return AJUDES_PER_REGLA[regla] ?? null;
+}
+
+/** Cert per als cursos de primaria, que son els que volen l'altra explicacio. */
+export function esPrimaria(gradeLevel: string | null | undefined) {
+  return !!gradeLevel && gradeLevel.endsWith("-primaria");
+}
+
+/**
+ * El text que toca segons qui llegeix.
+ *
+ * Tres coses manen, en aquest ordre: si es primaria, si te adaptacions, i si
+ * no, la versio completa. A batxillerat i a qui prepara un C1 o un C2 se'ls
+ * dona la completa amb el parany: la norma basica ja la saben i el que els
+ * cal son justament les excepcions.
+ */
+export function textAjuda(
+  ajuda: AjudaRegla,
+  { primaria, curta }: { primaria: boolean; curta: boolean }
+): { norma: string; exemples: string[]; parany?: string } {
+  if (primaria && ajuda.primaria) {
+    return {
+      norma: curta ? ajuda.normaCurta : ajuda.primaria.norma,
+      exemples: ajuda.primaria.exemples,
+    };
+  }
+  if (curta) return { norma: ajuda.normaCurta, exemples: ajuda.exemples.slice(0, 2) };
+  return { norma: ajuda.norma, exemples: ajuda.exemples, parany: ajuda.parany };
 }
 
 /**

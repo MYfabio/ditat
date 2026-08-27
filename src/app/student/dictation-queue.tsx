@@ -20,6 +20,8 @@ export type DictationForStudent = {
   ajudaOberta?: boolean;
   /** Repas reduit: qui te adaptacions no ha de llegir un bloc dens. */
   ajudaCurta?: boolean;
+  /** Cursos de primaria: explicacio sense metallenguatge. */
+  esPrimaria?: boolean;
 };
 
 /**
@@ -73,6 +75,7 @@ export function DictationQueue({
         targetRule={d.targetRule}
         ajudaOberta={d.ajudaOberta}
         ajudaCurta={d.ajudaCurta}
+        esPrimaria={d.esPrimaria}
       />
 
       {altres.length > 0 && (

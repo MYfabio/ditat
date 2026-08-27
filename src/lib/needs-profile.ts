@@ -13,6 +13,14 @@ export type NeedsProfile = {
   highContrast: boolean;
   /** Frases curtes i lectura d'una sola frase per bloc. */
   tdahPacing: boolean;
+  /**
+   * Repàs de la norma abans del dictat. Actiu per defecte.
+   *
+   * Es pot desactivar perquè hi ha un moment en què deixa d'ajudar: quan la
+   * norma ja se sap, tenir-la davant just abans converteix el dictat en una
+   * còpia i deixa de mesurar res. És el docent qui sap quan s'ha arribat aquí.
+   */
+  ruleHelp?: boolean;
   /** Nota del docent (context, indicacions de l'equip d'orientació...). */
   notes?: string;
   /** Quan el docent va tocar aquestes adaptacions per última vegada. */
@@ -23,6 +31,7 @@ export const EMPTY_NEEDS_PROFILE: NeedsProfile = {
   dyslexiaSupport: false,
   highContrast: false,
   tdahPacing: false,
+  ruleHelp: true,
 };
 
 /** Normalitza el Json de la base de dades a un perfil complet i segur. */
@@ -33,6 +42,9 @@ export function parseNeedsProfile(raw: unknown): NeedsProfile {
     dyslexiaSupport: Boolean(p.dyslexiaSupport),
     highContrast: Boolean(p.highContrast),
     tdahPacing: Boolean(p.tdahPacing),
+    // Absent vol dir actiu: qui no ha tocat mai aquesta opcio ha de tenir el
+    // repas, no trobar-se'l apagat sense haver-ho decidit.
+    ruleHelp: p.ruleHelp === undefined ? true : Boolean(p.ruleHelp),
     notes: typeof p.notes === "string" && p.notes.trim() ? p.notes.trim() : undefined,
     updatedAt: typeof p.updatedAt === "string" ? p.updatedAt : undefined,
   };

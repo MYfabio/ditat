@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { Historial, type EntregaHistorial } from "./historial";
-import { ajudaObertaPerDefecte } from "@/lib/rule-help";
+import { ajudaObertaPerDefecte, esPrimaria } from "@/lib/rule-help";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
 import { AutonomousPanel } from "./autonomous-panel";
@@ -44,6 +44,7 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
           targetStudentId: true,
           playbackSettings: true,
           targetRule: true,
+          gradeLevel: true,
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -162,8 +163,9 @@ export default async function StudentPage() {
     perRegla.set(regla, f);
   }
   const teAdaptacions = hasAnyAdaptation(needs);
+  const repasActiu = needs.ruleHelp !== false;
   function repasObert(regla: string | null | undefined) {
-    if (!regla) return false;
+    if (!regla || !repasActiu) return false;
     const f = perRegla.get(regla);
     return ajudaObertaPerDefecte({
       mitjanaEnAquestaRegla: f && f.intents ? Math.round(f.suma / f.intents) : null,
@@ -180,9 +182,10 @@ export default async function StudentPage() {
       title: d.title,
       rawText: d.rawText,
       hasAudio: d.wantsAudio,
-      targetRule: d.targetRule ?? undefined,
+      targetRule: repasActiu ? (d.targetRule ?? undefined) : undefined,
       ajudaOberta: repasObert(d.targetRule),
       ajudaCurta: teAdaptacions,
+      esPrimaria: esPrimaria(d.gradeLevel ?? learningLevel),
       personalised: !!d.targetStudentId,
       playback: parsePlaybackSettings(d.playbackSettings),
     }));

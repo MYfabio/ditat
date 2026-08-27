@@ -220,6 +220,7 @@ export async function updateStudentNeeds(studentId: string, needs: NeedsProfile)
         dyslexiaSupport: needs.dyslexiaSupport,
         highContrast: needs.highContrast,
         tdahPacing: needs.tdahPacing,
+        ruleHelp: needs.ruleHelp !== false,
         ...(needs.notes ? { notes: needs.notes } : {}),
         // Marca de temps del canvi. L'alumne pot ajustar-se les ajudes al seu
         // dispositiu, però si el docent les torna a tocar més tard, mana el

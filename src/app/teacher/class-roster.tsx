@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookOpenText, Contrast, Timer, Loader2, Check, UserMinus } from "lucide-react";
+import { BookOpenText, BookOpen, Contrast, Timer, Loader2, Check, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { updateStudentNeeds, removeStudentFromGroup, deleteStudent } from "./actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
@@ -80,6 +80,11 @@ export function ClassRoster({ students }: { students: RosterStudent[] }) {
                       <Timer className="size-3.5" /> Ritme TDAH
                     </span>
                   </TableHead>
+                  <TableHead className="text-center">
+                    <span className="inline-flex items-center gap-1">
+                      <BookOpen className="size-3.5" /> Repàs norma
+                    </span>
+                  </TableHead>
                   <TableHead>Nota</TableHead>
                   <TableHead />
                 </TableRow>
@@ -106,6 +111,7 @@ function StudentRow({ student }: { student: RosterStudent }) {
     needs.dyslexiaSupport !== student.needs.dyslexiaSupport ||
     needs.highContrast !== student.needs.highContrast ||
     needs.tdahPacing !== student.needs.tdahPacing ||
+    (needs.ruleHelp !== false) !== (student.needs.ruleHelp !== false) ||
     (needs.notes ?? "") !== (student.needs.notes ?? "");
 
   function save() {
@@ -153,6 +159,13 @@ function StudentRow({ student }: { student: RosterStudent }) {
           checked={needs.tdahPacing}
           onCheckedChange={(v) => setNeeds((n) => ({ ...n, tdahPacing: Boolean(v) }))}
           aria-label={`Ritme TDAH per a ${student.name}`}
+        />
+      </TableCell>
+      <TableCell className="text-center">
+        <Checkbox
+          checked={needs.ruleHelp !== false}
+          onCheckedChange={(v) => setNeeds((n) => ({ ...n, ruleHelp: Boolean(v) }))}
+          aria-label={`Repas de la norma abans del dictat per a ${student.name}`}
         />
       </TableCell>
       <TableCell>

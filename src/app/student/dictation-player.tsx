@@ -77,6 +77,7 @@ export function DictationPlayer({
   targetRule,
   ajudaOberta = false,
   ajudaCurta = false,
+  esPrimaria: alumnePrimaria = false,
 }: {
   dictationId: string;
   title: string;
@@ -90,6 +91,7 @@ export function DictationPlayer({
   targetRule?: string;
   ajudaOberta?: boolean;
   ajudaCurta?: boolean;
+  esPrimaria?: boolean;
 }) {
   const router = useRouter();
   const chunks = useMemo(
@@ -487,6 +489,7 @@ export function DictationPlayer({
               regla={ruleLabel(targetRule)}
               obertPerDefecte={ajudaOberta}
               versioCurta={ajudaCurta}
+              esPrimaria={alumnePrimaria}
             />
           </div>
         )}

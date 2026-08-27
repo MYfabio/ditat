@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BookOpen, ChevronDown } from "lucide-react";
-import type { AjudaRegla } from "@/lib/rule-help";
+import { textAjuda, type AjudaRegla } from "@/lib/rule-help";
 
 /**
  * El repas de la norma abans de comencar el dictat.
@@ -22,14 +22,18 @@ export function RuleHelpPanel({
   regla,
   obertPerDefecte = false,
   versioCurta = false,
+  esPrimaria = false,
 }: {
   ajuda: AjudaRegla;
   regla: string;
   obertPerDefecte?: boolean;
   /** Versio reduida per a qui te adaptacions: menys text i menys exemples. */
   versioCurta?: boolean;
+  /** Cursos de primaria: explicacio sense metallenguatge. */
+  esPrimaria?: boolean;
 }) {
   const [obert, setObert] = useState(obertPerDefecte);
+  const text = textAjuda(ajuda, { primaria: esPrimaria, curta: versioCurta });
 
   return (
     <div className="rounded-md border border-primary/30 bg-primary/5">
@@ -53,13 +57,13 @@ export function RuleHelpPanel({
       {obert && (
         <div className="space-y-3 border-t border-primary/20 px-3 py-3 text-sm">
           <p className={versioCurta ? "text-base font-medium leading-relaxed" : undefined}>
-            {versioCurta ? ajuda.normaCurta : ajuda.norma}
+            {text.norma}
           </p>
 
           {/* Menys exemples i mes grans: amb dos n'hi ha prou per veure el
               patro, i una llista llarga nomes es mes text per llegir. */}
           <ul className="space-y-1">
-            {(versioCurta ? ajuda.exemples.slice(0, 2) : ajuda.exemples).map((e) => (
+            {text.exemples.map((e) => (
               <li
                 key={e}
                 className={`rounded bg-background/70 px-2 py-1 font-mono ${
@@ -71,9 +75,9 @@ export function RuleHelpPanel({
             ))}
           </ul>
 
-          {!versioCurta && ajuda.parany && (
+          {text.parany && (
             <p className="rounded-md border border-amber-400/40 bg-amber-50/60 p-2 text-xs dark:bg-amber-900/20">
-              <strong>Compte:</strong> {ajuda.parany}
+              <strong>Compte:</strong> {text.parany}
             </p>
           )}
 
