@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
 import { signOut } from "next-auth/react";
-import { LogOut } from "lucide-react";
+import { LogOut, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +37,11 @@ export function UserMenu({ name, email }: { name?: string | null; email?: string
             <span className="text-xs font-normal text-muted-foreground">{email}</span>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link href="/compte" />}>
+          <UserCog />
+          El meu compte
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
           <LogOut />
