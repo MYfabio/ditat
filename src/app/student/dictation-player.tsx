@@ -487,6 +487,7 @@ export function DictationPlayer({
             <RuleHelpPanel
               ajuda={ajudaPerRegla(targetRule)!}
               regla={ruleLabel(targetRule)}
+              reglaClau={targetRule}
               obertPerDefecte={ajudaOberta}
               versioCurta={ajudaCurta}
               esPrimaria={alumnePrimaria}

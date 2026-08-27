@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, ChevronDown } from "lucide-react";
+import { BookOpen, ChevronDown, Volume2, Loader2 } from "lucide-react";
 import { textAjuda, type AjudaRegla } from "@/lib/rule-help";
 
 /**
@@ -23,6 +23,7 @@ export function RuleHelpPanel({
   obertPerDefecte = false,
   versioCurta = false,
   esPrimaria = false,
+  reglaClau,
 }: {
   ajuda: AjudaRegla;
   regla: string;
@@ -31,8 +32,44 @@ export function RuleHelpPanel({
   versioCurta?: boolean;
   /** Cursos de primaria: explicacio sense metallenguatge. */
   esPrimaria?: boolean;
+  /** Identificador de la regla, per demanar-ne la locucio. */
+  reglaClau: string;
 }) {
   const [obert, setObert] = useState(obertPerDefecte);
+  const [carregantVeu, setCarregantVeu] = useState(false);
+
+  /**
+   * Llegeix la norma en veu alta.
+   *
+   * Primer prova la locucio del servidor, que es la bona i ja esta desada. Si
+   * no n'hi ha, es fa servir la veu del navegador: pitjor, pero sempre hi es i
+   * per a qui necessita escoltar-ho val mes aixo que res.
+   */
+  async function escolta() {
+    setCarregantVeu(true);
+    try {
+      const versio = esPrimaria ? "primaria" : "completa";
+      const r = await fetch(`/api/rule-help/${encodeURIComponent(reglaClau)}/audio?v=${versio}`);
+      if (r.ok && r.status !== 204) {
+        const so = new Audio(URL.createObjectURL(await r.blob()));
+        await so.play();
+        return;
+      }
+    } catch {
+      // Cau a la veu del navegador.
+    } finally {
+      setCarregantVeu(false);
+    }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const frase = new SpeechSynthesisUtterance(
+        `${text.norma} Per exemple: ${text.exemples.join("; ")}.`
+      );
+      frase.lang = "ca-ES";
+      frase.rate = 0.9;
+      window.speechSynthesis.speak(frase);
+    }
+  }
+
   const text = textAjuda(ajuda, { primaria: esPrimaria, curta: versioCurta });
 
   return (
@@ -56,9 +93,24 @@ export function RuleHelpPanel({
 
       {obert && (
         <div className="space-y-3 border-t border-primary/20 px-3 py-3 text-sm">
-          <p className={versioCurta ? "text-base font-medium leading-relaxed" : undefined}>
-            {text.norma}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className={versioCurta ? "text-base font-medium leading-relaxed" : undefined}>
+              {text.norma}
+            </p>
+            <button
+              type="button"
+              onClick={escolta}
+              disabled={carregantVeu}
+              className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-background disabled:opacity-60"
+            >
+              {carregantVeu ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Volume2 className="size-3.5" />
+              )}
+              Escoltar
+            </button>
+          </div>
 
           {/* Menys exemples i mes grans: amb dos n'hi ha prou per veure el
               patro, i una llista llarga nomes es mes text per llegir. */}

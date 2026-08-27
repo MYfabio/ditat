@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
+import { RuleHelpReview } from "./rule-help-review";
 import { ClassRoster, type RosterStudent } from "./class-roster";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { Button } from "@/components/ui/button";
@@ -232,6 +233,7 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
             <TabsTrigger value="classe">La meva classe</TabsTrigger>
             <TabsTrigger value="alumnat">Seguiment individual</TabsTrigger>
             <TabsTrigger value="entregues">Revisor d&apos;entregues</TabsTrigger>
+            <TabsTrigger value="repas">Repàs de normes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classe" className="space-y-6">
@@ -426,6 +428,10 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
 
           <TabsContent value="alumnat">
             <StudentProfiles profiles={studentProfiles} />
+          </TabsContent>
+
+          <TabsContent value="repas">
+            <RuleHelpReview />
           </TabsContent>
 
           <TabsContent value="entregues">

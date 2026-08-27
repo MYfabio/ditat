@@ -404,3 +404,25 @@ model ImprovementReport {
 
   @@index([studentId])
 }
+
+/// Locucio del repas d'una norma, generada un cop i reutilitzada sempre.
+///
+/// Les normes no canvien mai i nomes n'hi ha deu, aixi que la primera vegada
+/// que algu prem "Escoltar" es genera i ja no es torna a demanar mai mes. Es
+/// la diferencia entre un cost fix ridicul i pagar una locucio per alumne i
+/// per dictat.
+///
+/// Per a qui te dislexia, aixo no es una comoditat: llegir un text sobre
+/// ortografia es exactament la part que li costa.
+model RuleHelpAudio {
+  /// Regla i versio: "b-v:primaria" o "b-v:completa".
+  clau String @id
+
+  data     Bytes
+  mimeType String
+  source   String
+
+  createdAt DateTime @default(now())
+
+  @@map("rule_help_audio")
+}
