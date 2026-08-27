@@ -596,18 +596,40 @@ export function DictationPlayer({
               </div>
             </div>
 
-            {photoPreview && (
+
+            {/* L'ordre segueix el que ensenya, no el que documenta: primer
+                les errades amb el perque —que es on s'apren—, despres els dos
+                textos per situar-les, i la foto anotada plegada al final. Tot
+                a la vegada competia i no es llegia res. */}
+            {result.errors.length > 0 && (
               <div className="rounded-md border p-4">
-                <p className="mb-1 text-sm font-medium">El teu dictat corregit</p>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  {result.annotations.length > 0
-                    ? "Les paraules subratllades s'escriuen com diu el text vermell, i el ganxo marca una paraula que hi falta." +
-                      (result.uncertain > 0
-                        ? " El traç discontinu és una paraula que no s'ha pogut llegir bé: no compta com a errada."
-                        : "")
-                    : "No s'han pogut situar les correccions sobre la foto; les tens a la taula de sota."}
-                </p>
-                <AnnotatedPhoto src={photoPreview} annotations={result.annotations} />
+                <p className="mb-2 text-sm font-medium">Les teves errades, i per què</p>
+                <div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ho havies d&apos;escriure</TableHead>
+                        <TableHead>Ho vas escriure</TableHead>
+                        <TableHead>Per què</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {result.errors.map((err, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
+                          <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
+                          <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+            {result.errors.length === 0 && (
+              <div className="flex items-center gap-2 rounded-md border p-4 text-sm text-primary">
+                <CheckCircle2 className="size-4" />
+                Cap error detectat, ho has escrit tot correctament!
               </div>
             )}
 
@@ -641,37 +663,26 @@ export function DictationPlayer({
                 </div>
               </div>
 
-              {result.errors.length > 0 ? (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    Paraules per revisar
-                  </p>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ho havies d&apos;escriure</TableHead>
-                        <TableHead>Ho vas escriure</TableHead>
-                        <TableHead>Per què</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {result.errors.map((err, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium">{err.paraulaOriginal}</TableCell>
-                          <TableCell className="text-destructive">{err.paraulaEscrita}</TableCell>
-                          <TableCell className="text-muted-foreground">{err.explicacio}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="mt-4 flex items-center gap-2 text-sm text-primary">
-                  <CheckCircle2 className="size-4" />
-                  Cap error detectat, ho has escrit tot correctament!
-                </div>
-              )}
             </div>
+
+            {photoPreview && (
+              <details className="rounded-md border">
+                <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+                  La teva foto amb les correccions marcades
+                </summary>
+                <div className="border-t p-4">
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      {result.annotations.length > 0
+                        ? "Les paraules subratllades s'escriuen com diu el text vermell, i el ganxo marca una paraula que hi falta." +
+                          (result.uncertain > 0
+                            ? " El traç discontinu és una paraula que no s'ha pogut llegir bé: no compta com a errada."
+                            : "")
+                        : "No s'han pogut situar les correccions sobre la foto; les tens a la taula de sota."}
+                    </p>
+                    <AnnotatedPhoto src={photoPreview} annotations={result.annotations} />
+                </div>
+              </details>
+            )}
           </div>
         )}
       </div>

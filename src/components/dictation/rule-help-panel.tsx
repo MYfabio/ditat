@@ -97,16 +97,23 @@ export function RuleHelpPanel({
             <p className={versioCurta ? "text-base font-medium leading-relaxed" : undefined}>
               {text.norma}
             </p>
+            {/* Per a primaria i per a qui te adaptacions, escoltar no es un
+                extra: es la via principal. El boto creix per a ells; per a la
+                resta es queda discret. */}
             <button
               type="button"
               onClick={escolta}
               disabled={carregantVeu}
-              className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-background disabled:opacity-60"
+              className={`flex shrink-0 items-center rounded-md border hover:bg-background disabled:opacity-60 ${
+                versioCurta || esPrimaria
+                  ? "gap-2 px-4 py-2.5 text-sm font-medium"
+                  : "gap-1 px-2 py-1 text-xs"
+              }`}
             >
               {carregantVeu ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Loader2 className={versioCurta || esPrimaria ? "size-5 animate-spin" : "size-3.5 animate-spin"} />
               ) : (
-                <Volume2 className="size-3.5" />
+                <Volume2 className={versioCurta || esPrimaria ? "size-5" : "size-3.5"} />
               )}
               Escoltar
             </button>

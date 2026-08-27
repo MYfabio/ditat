@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from "@/components/dashboard/url-tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -149,7 +150,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
 
         {/* El filtre s'envia per GET i recarrega la pàgina: si no, es tornaria
             sempre a la primera pestanya i es perdria el que s'estava mirant. */}
-        <Tabs defaultValue={schoolId || q ? "usuaris" : "escoles"}>
+        <UrlTabs defaultValue={schoolId || q ? "usuaris" : "escoles"}>
           <TabsList>
             <TabsTrigger value="escoles">Escoles</TabsTrigger>
             <TabsTrigger value="usuaris">Usuaris i rols</TabsTrigger>
@@ -492,7 +493,7 @@ S'esborren el seu compte, les seves entregues i els seus informes. Els dictats q
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+        </UrlTabs>
       </main>
     </>
   );

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Building2 } from "lucide-react";
 import { DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
+import { stripeConfigurat } from "@/lib/stripe";
 
 /**
  * Preus.
@@ -44,6 +45,10 @@ const INDIVIDUAL = [
 ];
 
 export function Pricing() {
+  // El text surt de la mateixa configuracio que fa funcionar el cobrament:
+  // mentre Stripe no hi sigui, "S'obre aviat" es la veritat; el dia que s'hi
+  // posin les claus, el boto passara a vendre sol, sense tocar res mes.
+  const esPotPagar = stripeConfigurat();
   return (
     <section id="preus" className="border-b py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -63,7 +68,7 @@ export function Pricing() {
               className={plan.highlight ? "border-primary shadow-lg shadow-primary/10" : ""}
             >
               <CardHeader>
-                {plan.highlight && <Badge className="mb-2 w-fit">S&apos;obre aviat</Badge>}
+                {plan.highlight && !esPotPagar && <Badge className="mb-2 w-fit">S&apos;obre aviat</Badge>}
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
                 <p className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-bold">{plan.price}</span>
@@ -86,7 +91,7 @@ export function Pricing() {
                   nativeButton={false}
                   render={<a href="/login" />}
                 >
-                  {plan.highlight ? "Avisa'm quan s'obri" : "Començar gratis"}
+                  {plan.highlight ? (esPotPagar ? "Subscriu-te" : "Avisa'm quan s'obri") : "Començar gratis"}
                 </Button>
               </CardContent>
             </Card>

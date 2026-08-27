@@ -63,7 +63,12 @@ export function LiveWidget() {
                 </label>
                 <Select value={gradeLevel} onValueChange={(v) => v && setGradeLevel(v)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    {/* Sense aixo es veia el valor intern ("4-primaria") en
+                        lloc de "4t Primària", a la primera interaccio que te
+                        un docent que arriba de Google. */}
+                    <SelectValue>
+                      {GRADE_LEVELS.find((g) => g.value === gradeLevel)?.label}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {GRADE_LEVELS.map((g) => (
@@ -80,7 +85,9 @@ export function LiveWidget() {
                 </label>
                 <Select value={targetRule} onValueChange={(v) => v && setTargetRule(v)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {ORTHOGRAPHIC_RULES.find((r) => r.value === targetRule)?.label}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ORTHOGRAPHIC_RULES.map((r) => (

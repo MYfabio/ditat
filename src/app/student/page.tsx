@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DbNotice } from "@/components/dashboard/db-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from "@/components/dashboard/url-tabs";
 import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { Historial, type EntregaHistorial } from "./historial";
 import { ajudaObertaPerDefecte, esPrimaria } from "@/lib/rule-help";
@@ -224,7 +225,7 @@ export default async function StudentPage() {
         {/* Dos espais, no un: el que has de fer ara, i com et va anant. Barrejar
             les dues coses feia que un dictat pendent quedes despres de quatre
             insignies i una llista de notes. */}
-        <Tabs defaultValue="perfer" className="space-y-6">
+        <UrlTabs defaultValue="perfer" className="space-y-6">
           <TabsList>
             <TabsTrigger value="perfer">
               Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
@@ -367,7 +368,7 @@ export default async function StudentPage() {
               </Card>
             </TabsContent>
           )}
-        </Tabs>
+        </UrlTabs>
       </main>
     </>
   );

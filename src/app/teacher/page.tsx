@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DbNotice } from "@/components/dashboard/db-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlTabs } from "@/components/dashboard/url-tabs";
 import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
@@ -226,17 +227,91 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
       <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
-        <Tabs defaultValue={q || grup ? "classe" : "generador"}>
+        {/* Tres espais en lloc de sis llocs: la feina del dia (crear i
+            corregir), el seguiment (classe i alumne), i el que es toca un cop
+            (grups i repas de normes). I la pestanya viu a l'URL: recarregar
+            et deixa on eres. */}
+        <UrlTabs defaultValue={q || grup ? "config" : "feina"}>
           <TabsList>
-            <TabsTrigger value="generador">Generador de dictats</TabsTrigger>
-            <TabsTrigger value="analitiques">Analítiques de classe</TabsTrigger>
-            <TabsTrigger value="classe">La meva classe</TabsTrigger>
-            <TabsTrigger value="alumnat">Seguiment individual</TabsTrigger>
-            <TabsTrigger value="entregues">Revisor d&apos;entregues</TabsTrigger>
-            <TabsTrigger value="repas">Repàs de normes</TabsTrigger>
+            <TabsTrigger value="feina">Dictats i entregues</TabsTrigger>
+            <TabsTrigger value="seguiment">Seguiment</TabsTrigger>
+            <TabsTrigger value="config">La classe i el repàs</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="classe" className="space-y-6">
+          <TabsContent value="feina" className="space-y-8">
+
+            <DictationGenerator classGroups={data.dbAvailable ? data.classGroups : []} />
+
+            <SubmissionReviewer submissions={submissions} />
+          </TabsContent>
+
+          <TabsContent value="seguiment" className="space-y-8">
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Errors ortogràfics més freqüents</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topErrors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Encara no hi ha prou entregues corregides per mostrar estadistiques.
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {topErrors.map(([word, count]) => (
+                      <div key={word} className="flex items-center gap-3 text-sm">
+                        <span className="w-28 shrink-0 truncate font-medium">{word}</span>
+                        <div className="h-2 flex-1 rounded-full bg-muted">
+                          <div
+                            className="h-2 rounded-full bg-destructive"
+                            style={{ width: `${(count / maxErrorCount) * 100}%` }}
+                          />
+                        </div>
+                        <span className="w-6 shrink-0 text-right text-muted-foreground">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Puntuació mitjana per dictat</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {progress.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Encara no hi ha puntuacions per mostrar l&apos;evolució de la classe.
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {progress.map((p) => (
+                      <div key={p.title} className="flex items-center gap-3 text-sm">
+                        <span className="w-40 shrink-0 truncate" title={p.title}>
+                          {p.rule}
+                        </span>
+                        <div className="h-2 flex-1 rounded-full bg-muted">
+                          <div
+                            className="h-2 rounded-full bg-primary"
+                            style={{ width: `${p.avg}%` }}
+                          />
+                        </div>
+                        <span className="w-10 shrink-0 text-right text-muted-foreground">
+                          {p.avg}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <StudentProfiles profiles={studentProfiles} />
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-8">
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Crear un grup classe</CardTitle>
@@ -358,86 +433,10 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
               ]}
             />
             <ClassRoster students={roster} />
-          </TabsContent>
 
-          <TabsContent value="generador" className="space-y-6">
-            <DictationGenerator classGroups={data.dbAvailable ? data.classGroups : []} />
-          </TabsContent>
-
-          <TabsContent value="analitiques" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Errors ortogràfics més freqüents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {topErrors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Encara no hi ha prou entregues corregides per mostrar estadistiques.
-                  </p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {topErrors.map(([word, count]) => (
-                      <div key={word} className="flex items-center gap-3 text-sm">
-                        <span className="w-28 shrink-0 truncate font-medium">{word}</span>
-                        <div className="h-2 flex-1 rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-destructive"
-                            style={{ width: `${(count / maxErrorCount) * 100}%` }}
-                          />
-                        </div>
-                        <span className="w-6 shrink-0 text-right text-muted-foreground">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Puntuació mitjana per dictat</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {progress.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Encara no hi ha puntuacions per mostrar l&apos;evolució de la classe.
-                  </p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {progress.map((p) => (
-                      <div key={p.title} className="flex items-center gap-3 text-sm">
-                        <span className="w-40 shrink-0 truncate" title={p.title}>
-                          {p.rule}
-                        </span>
-                        <div className="h-2 flex-1 rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-primary"
-                            style={{ width: `${p.avg}%` }}
-                          />
-                        </div>
-                        <span className="w-10 shrink-0 text-right text-muted-foreground">
-                          {p.avg}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="alumnat">
-            <StudentProfiles profiles={studentProfiles} />
-          </TabsContent>
-
-          <TabsContent value="repas">
             <RuleHelpReview />
           </TabsContent>
-
-          <TabsContent value="entregues">
-            <SubmissionReviewer submissions={submissions} />
-          </TabsContent>
-        </Tabs>
+        </UrlTabs>
       </main>
     </>
   );
