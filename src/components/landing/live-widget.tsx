@@ -47,11 +47,12 @@ export function LiveWidget() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Prova el generador ara mateix
+            Mira quin aspecte té un dictat
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Tria un curs i una regla ortogràfica: la IA et proposarà un dictat de
-            mostra a l&apos;instant.
+            Tria un curs i una regla ortogràfica i et mostrem un exemple real,
+            amb la llargada que li toca al cicle. Dins de l&apos;aplicació, els
+            dictats es generen amb IA a partir dels errors de cada alumne.
           </p>
         </div>
         <Card>
