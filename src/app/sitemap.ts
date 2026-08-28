@@ -12,6 +12,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: `${base}/examen-c1`,
+      lastModified: ara,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/examen-c2`,
+      lastModified: ara,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     { url: `${base}/login`, lastModified: ara, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/privacitat`, lastModified: ara, changeFrequency: "yearly", priority: 0.3 },
   ];

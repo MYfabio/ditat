@@ -122,6 +122,24 @@ export default function DictatsC1C2() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          <div className="rounded-lg border p-5">
+            <h2 className="text-lg font-semibold">Encara no saps com és la prova?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Abans de preparar-te res, val la pena saber què t&apos;hi trobaràs: les
+              àrees, les durades i on es juga la nota l&apos;ortografia.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" nativeButton={false} render={<a href="/examen-c1" />}>
+                Com és l&apos;examen del C1
+              </Button>
+              <Button variant="outline" size="sm" nativeButton={false} render={<a href="/examen-c2" />}>
+                Com és l&apos;examen del C2
+              </Button>
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight">
             Comença gratis, paga només si t&apos;ajuda
