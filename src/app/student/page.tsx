@@ -8,6 +8,8 @@ import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlTabs } from "@/components/dashboard/url-tabs";
 import { DictationQueue, type DictationForStudent } from "./dictation-queue";
 import { Historial, type EntregaHistorial } from "./historial";
+import { ConversaGuiada } from "./conversa-guiada";
+import { triaTopic } from "@/lib/conversa-topics";
 import { ajudaObertaPerDefecte, esPrimaria } from "@/lib/rule-help";
 import { AssignedNeedsSync } from "./assigned-needs-sync";
 import { JoinClass } from "./join-class";
@@ -22,7 +24,7 @@ import { ruleLabel } from "@/lib/dictation-rules";
 
 async function loadStudentData(studentId: string, classGroupId: string | null) {
   try {
-    const [me, dictations, submissions, latestReport] = await Promise.all([
+    const [me, dictations, submissions, converses, latestReport] = await Promise.all([
       prisma.user.findUnique({
         where: { id: studentId },
         select: { needsProfile: true, learningLevel: true },
@@ -54,6 +56,11 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
         include: { dictation: true },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.conversa.findMany({
+        where: { studentId },
+        select: { topicId: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
       prisma.improvementReport.findFirst({
         where: { studentId },
         orderBy: { createdAt: "desc" },
@@ -61,6 +68,7 @@ async function loadStudentData(studentId: string, classGroupId: string | null) {
     ]);
     return {
       dbAvailable: true as const,
+      converses,
       needs: parseNeedsProfile(me?.needsProfile),
       learningLevel: me?.learningLevel ?? null,
       dictations,
@@ -107,6 +115,7 @@ export default async function StudentPage() {
 
   const dictations = data.dbAvailable ? data.dictations : [];
   const submissions = data.dbAvailable ? data.submissions : [];
+  const converses = data.dbAvailable ? data.converses : [];
   const needs = data.dbAvailable ? data.needs : EMPTY_NEEDS_PROFILE;
   const metrics = (data.dbAvailable ? data.latestReport?.weaknessMetrics : null) as {
     perRule?: { rule: string; averageScore: number; mastered: boolean; attempts: number }[];
@@ -174,6 +183,18 @@ export default async function StudentPage() {
       teAdaptacions,
     });
   }
+
+  // La conversa del dia: el tema que fa mes temps que no es toca, i el
+  // comptador del mes per ensenyar-lo abans que s'esgoti, no despres.
+  const iniciMes = new Date();
+  iniciMes.setDate(1);
+  iniciMes.setHours(0, 0, 0, 0);
+  const conversesAquestMes = converses.filter((c) => c.createdAt >= iniciMes).length;
+  const temaConversa = triaTopic(
+    learningLevel ?? null,
+    converses.map((c) => c.topicId)
+  );
+  const limitConverses = session?.user?.classGroupId ? 8 : subscripcio?.actiu ? null : 4;
 
   const entregats = new Set(submissions.map((s) => s.dictationId));
   const pendents: DictationForStudent[] = dictations
@@ -253,6 +274,16 @@ export default async function StudentPage() {
               </div>
             ) : (
               <DictationQueue pending={pendents} sentencesPerChunk={sentencesPerChunk(needs)} />
+            )}
+
+            {(!autonom || learningLevel) && (
+              <ConversaGuiada
+                topicId={temaConversa.id}
+                titol={temaConversa.titol}
+                preguntes={[...temaConversa.preguntes]}
+                fetesAquestMes={conversesAquestMes}
+                limitMensual={limitConverses}
+              />
             )}
 
             {/* L'accio que genera feina va amb la feina, no en una targeta de

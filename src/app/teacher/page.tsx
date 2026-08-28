@@ -9,6 +9,8 @@ import { DictationGenerator } from "./dictation-generator";
 import { SubmissionReviewer, type ReviewSubmission } from "./submission-reviewer";
 import { StudentProfiles, type StudentProfileView } from "./student-profiles";
 import { RuleHelpReview } from "./rule-help-review";
+import { ConversesReview, type ConversaPerRevisar } from "./converses-review";
+import { topicPerId } from "@/lib/conversa-topics";
 import { ClassRoster, type RosterStudent } from "./class-roster";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { Button } from "@/components/ui/button";
@@ -45,7 +47,7 @@ async function loadTeacherData(
   const groupFilter = filters.grup ? { classGroupId: filters.grup } : {};
 
   try {
-    const [classGroups, dictations, students, schoolStudents] = await Promise.all([
+    const [classGroups, dictations, students, schoolStudents, converses] = await Promise.all([
       prisma.classGroup.findMany({
         where: { teacherId },
         include: { _count: { select: { students: true } } },
@@ -87,8 +89,14 @@ async function loadTeacherData(
             orderBy: { name: "asc" },
           })
         : Promise.resolve([]),
+      prisma.conversa.findMany({
+        where: { student: { classGroup: { teacherId } } },
+        include: { student: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }),
     ]);
-    return { dbAvailable: true as const, classGroups, dictations, students, schoolStudents };
+    return { dbAvailable: true as const, classGroups, dictations, students, schoolStudents, converses };
   } catch {
     return { dbAvailable: false as const };
   }
@@ -172,6 +180,29 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
     : [];
 
   const schoolStudents = data.dbAvailable ? data.schoolStudents : [];
+
+  const conversesPerRevisar: ConversaPerRevisar[] = data.dbAvailable
+    ? data.converses.map((c) => {
+        const av = (c.avaluacio ?? {}) as {
+          resum?: string;
+          millores?: { que: string; exemple: string }[];
+        };
+        return {
+          id: c.id,
+          alumne: c.student.name || c.student.email,
+          tema: topicPerId(c.topicId)?.titol ?? c.topicId,
+          data: c.createdAt.toLocaleDateString("ca-ES", {
+            day: "2-digit",
+            month: "short",
+          }),
+          score: c.score,
+          preguntes: (c.questions as string[]) ?? [],
+          transcripcions: (c.transcripcions as string[]) ?? [],
+          resum: av.resum ?? "",
+          millores: av.millores ?? [],
+        };
+      })
+    : [];
 
   const groupsWithCode: GroupWithCode[] = data.dbAvailable
     ? data.classGroups.map((c) => ({
@@ -308,6 +339,7 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
             </Card>
 
             <StudentProfiles profiles={studentProfiles} />
+            <ConversesReview converses={conversesPerRevisar} />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-8">

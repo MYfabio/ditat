@@ -114,6 +114,7 @@ model User {
   personalisedDictations Dictation[]         @relation("PersonalisedDictations")
   submissions            Submission[]        @relation("StudentSubmissions")
   improvementReports     ImprovementReport[] @relation("StudentReports")
+  converses              Conversa[]
 
   @@index([schoolId])
   @@index([classGroupId])
@@ -425,4 +426,32 @@ model RuleHelpAudio {
   createdAt DateTime @default(now())
 
   @@map("rule_help_audio")
+}
+
+/// Una conversa oral guiada: la IA pregunta amb veu, l'alumne respon gravant-se.
+///
+/// La veu de l'alumne NO es desa mai: s'analitza i es descarta. Amb menors, la
+/// veu es una dada biometrica i no guardar-la converteix un problema legal
+/// serios en cap. Es guarda nomes la transcripcio i la valoracio, que es el
+/// que el docent necessita per repassar-la.
+model Conversa {
+  id         String @id @default(cuid())
+  studentId  String
+  student    User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Tema del cataleg (lib/conversa-topics.ts) i nivell en aquell moment.
+  topicId    String
+  gradeLevel String
+
+  /// Les preguntes que es van fer, la transcripcio de cada resposta i la
+  /// valoracio sencera, tal com la va tornar la IA.
+  questions      Json
+  transcripcions Json
+  avaluacio      Json
+  score          Int
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, createdAt])
+  @@map("converses")
 }
