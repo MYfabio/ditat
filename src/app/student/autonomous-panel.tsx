@@ -22,12 +22,23 @@ import { setLearningLevel, requestOwnDictation } from "./actions";
  * text el continua triant el motor adaptatiu segons el seu perfil: l'unica
  * diferencia amb un alumne de classe es qui prem el boto.
  */
+/**
+ * Que ensenya el panell segons on visqui.
+ *
+ * "Quin nivell et prepares?" es una pregunta que es fa UNA vegada. Un cop
+ * resposta, tornar-la a ensenyar a la pantalla d'inici cada dia fa soroll i
+ * fa dubtar ("ho tinc ben posat?"). Per aixo el selector nomes surt sencer al
+ * primer cop, i despres viu a "El meu compte", que es on van les coses que es
+ * toquen de tant en tant.
+ */
 export function AutonomousPanel({
   level,
   hasPending,
+  mode = "complet",
 }: {
   level: string | null;
   hasPending: boolean;
+  mode?: "complet" | "nomesDemanar" | "nomesNivell";
 }) {
   const [selected, setSelected] = useState(level ?? "");
   const [saving, startSaving] = useTransition();
@@ -52,6 +63,7 @@ export function AutonomousPanel({
 
   return (
     <div className="space-y-4">
+      {mode !== "nomesDemanar" && (
       <div className="space-y-2">
         <p className="text-sm font-medium">Quin nivell et prepares?</p>
         <Select value={selected} onValueChange={(v) => v && chooseLevel(v)} disabled={saving}>
@@ -70,7 +82,9 @@ export function AutonomousPanel({
           Marca la llargada i les regles que se&apos;t suposen. El pots canviar quan vulguis.
         </p>
       </div>
+      )}
 
+      {mode !== "nomesNivell" && (
       <div>
         <Button onClick={askForDictation} disabled={asking || !selected || hasPending}>
           {asking ? <Loader2 className="animate-spin" /> : <Sparkles />}
@@ -82,6 +96,7 @@ export function AutonomousPanel({
             : "Sortirà de la regla que ara mateix et costa més."}
         </p>
       </div>
+      )}
     </div>
   );
 }

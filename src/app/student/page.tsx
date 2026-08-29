@@ -289,7 +289,11 @@ export default async function StudentPage() {
                       ? ` · ${subscripcio.restants} de ${DICTATS_GRATUITS_AL_MES} dictats gratuits aquest mes`
                       : ""}
                 </p>
-                <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
+                <AutonomousPanel
+                  level={learningLevel}
+                  hasPending={hasPendingDictation}
+                  mode="nomesDemanar"
+                />
               </div>
             )}
           </TabsContent>
@@ -383,6 +387,19 @@ export default async function StudentPage() {
 
           {autonom && (
             <TabsContent value="compte" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">El nivell que et prepares</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AutonomousPanel
+                    level={learningLevel}
+                    hasPending={hasPendingDictation}
+                    mode="nomesNivell"
+                  />
+                </CardContent>
+              </Card>
+
               {subscripcio && (
                 <SubscriptionCard
                   actiu={subscripcio.actiu}
