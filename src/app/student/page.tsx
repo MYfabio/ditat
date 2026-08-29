@@ -251,6 +251,7 @@ export default async function StudentPage() {
             <TabsTrigger value="perfer">
               Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
             </TabsTrigger>
+            <TabsTrigger value="conversa">Conversa</TabsTrigger>
             <TabsTrigger value="progres">Els meus progressos</TabsTrigger>
             {autonom && <TabsTrigger value="compte">El meu compte</TabsTrigger>}
           </TabsList>
@@ -276,16 +277,6 @@ export default async function StudentPage() {
               <DictationQueue pending={pendents} sentencesPerChunk={sentencesPerChunk(needs)} />
             )}
 
-            {(!autonom || learningLevel) && (
-              <ConversaGuiada
-                topicId={temaConversa.id}
-                titol={temaConversa.titol}
-                preguntes={[...temaConversa.preguntes]}
-                fetesAquestMes={conversesAquestMes}
-                limitMensual={limitConverses}
-              />
-            )}
-
             {/* L'accio que genera feina va amb la feina, no en una targeta de
                 configuracio a part. Una linia, no un bloc. */}
             {autonom && learningLevel && (
@@ -300,6 +291,25 @@ export default async function StudentPage() {
                 </p>
                 <AutonomousPanel level={learningLevel} hasPending={hasPendingDictation} />
               </div>
+            )}
+          </TabsContent>
+
+          {/* Escriure i parlar son dues practiques diferents: barrejades a
+              "Per fer", la conversa semblava un dictat mes i es perdia. */}
+          <TabsContent value="conversa" className="space-y-4">
+            {(!autonom || learningLevel) ? (
+              <ConversaGuiada
+                topicId={temaConversa.id}
+                titol={temaConversa.titol}
+                preguntes={[...temaConversa.preguntes]}
+                fetesAquestMes={conversesAquestMes}
+                limitMensual={limitConverses}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Tria primer el teu nivell a &quot;Per fer&quot; i podràs començar a
+                conversar.
+              </p>
             )}
           </TabsContent>
 
