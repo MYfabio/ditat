@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { SSOButtons, EmailLoginForm, DevMockLoginForm, LoginError } from "./login-form";
 import { demoLoginEnabled } from "@/auth";
+import { TriaPerfil } from "./tria-perfil";
 
 export default function LoginPage() {
   const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
@@ -32,6 +33,7 @@ export default function LoginPage() {
         </Suspense>
         <Suspense fallback={<div className="h-40" />}>
           {hasSSO || hasEmailLogin ? (
+            <TriaPerfil>
             <div className="space-y-4">
               {hasSSO && <SSOButtons hasGoogle={hasGoogle} hasMicrosoft={hasMicrosoft} />}
               {hasSSO && hasEmailLogin && (
@@ -43,6 +45,7 @@ export default function LoginPage() {
               )}
               {hasEmailLogin && <EmailLoginForm altaLliure={altaLliure} />}
             </div>
+            </TriaPerfil>
           ) : demoLoginEnabled ? (
             <DevMockLoginForm />
           ) : (
