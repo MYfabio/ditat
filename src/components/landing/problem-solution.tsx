@@ -26,6 +26,12 @@ export function ProblemSolution() {
           <p className="mt-3 text-muted-foreground">
             El que fins ara costava hores de feina docent, ara passa en segons.
           </p>
+          <p className="mt-6 text-sm">
+              <strong>Quin problema resol?</strong> Preparar dictats adaptats a cada nivell i corregir-los un a un porta molta feina. L&apos;app els genera en català del A1 al C2 i els corregeix explicant cada falta, amb adaptacions per a l&apos;alumnat amb NEE.
+            </p>
+            <p className="mt-3 text-sm">
+              <strong>Per a quina etapa o perfil serveix?</strong> Docents de llengua catalana de Primària i ESO, aula d&apos;acollida i educació d&apos;adults.
+            </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="border-destructive/30 bg-destructive/5">
