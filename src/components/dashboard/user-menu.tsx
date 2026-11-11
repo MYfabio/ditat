@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { signOut } from "next-auth/react";
-import { LogOut, UserCog } from "lucide-react";
+import { Eye, LogOut, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +15,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function UserMenu({ name, email }: { name?: string | null; email?: string | null }) {
+export function UserMenu({
+  name,
+  email,
+  role,
+}: {
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+}) {
   const initials = (name || email || "?").slice(0, 2).toUpperCase();
+  // Docents i superadmin poden veure l'espai d'alumne per comprovar què veu l'alumnat.
+  const potVeureComAlumne = role === "TEACHER" || role === "SUPERADMIN";
 
   return (
     <DropdownMenu>
@@ -38,6 +48,12 @@ export function UserMenu({ name, email }: { name?: string | null; email?: string
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {potVeureComAlumne && (
+          <DropdownMenuItem render={<Link href="/student?vista=prova" />}>
+            <Eye />
+            Veure com a alumne
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem render={<Link href="/compte" />}>
           <UserCog />
           El meu compte

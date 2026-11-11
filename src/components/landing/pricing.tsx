@@ -1,101 +1,70 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Check, Building2 } from "lucide-react";
-import { DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
-import { stripeConfigurat } from "@/lib/stripe";
+import { DICTATS_GRATUITS_AL_MES } from "@/lib/subscription";
 
 /**
  * Preus.
  *
- * Es venen dues coses molt diferents i abans es presentaven igual. Una persona
- * que es prepara un nivell decideix sola i en dos minuts: necessita veure el
- * preu i un boto. Un centre no compra mai aixi —ho parla, ho passa per
- * direccio i ho paga per factura—, i posar-li un boto de pagar no li serveix
- * de res. Per aixo aqui hi ha preu, i alla hi ha conversa.
+ * De moment nomes hi ha la versio gratuita. Un centre no compra aixi: ho parla,
+ * ho passa per direccio i ho paga per factura. Per aixo el bloc de sota porta a
+ * la conversa i no a un boto de pagar.
  */
-const INDIVIDUAL = [
-  {
-    name: "Gratuït",
-    price: "0 €",
-    period: "per sempre",
-    description: "Per provar-ho i veure si t'ajuda.",
-    features: [
-      `${DICTATS_GRATUITS_AL_MES} dictats al mes fets a la teva mida`,
-      "Nivells del A1 al C2",
-      "Correcció amb explicació de cada falta",
-      "Veu catalana per escoltar-los",
-    ],
-    highlight: false,
-  },
-  {
-    name: "Il·limitat",
-    price: `${PREU_MENSUAL_EUR} €`,
-    period: "al mes",
-    description: "Per preparar-te de debò, al teu ritme.",
-    features: [
-      "Dictats sense límit",
-      "Els següents surten dels teus propis errors",
-      "Correcció per foto del que has escrit a mà",
-      "El teu progrés regla per regla",
-      "Pots donar-te de baixa quan vulguis",
-    ],
-    highlight: true,
-  },
-];
+const GRATUIT = {
+  name: "Gratuït",
+  price: "0 €",
+  period: "per sempre",
+  description: "Per provar-ho i veure si t'ajuda.",
+  features: [
+    `${DICTATS_GRATUITS_AL_MES} dictats al mes fets a la teva mida`,
+    "Nivells del A1 al C2",
+    "Correcció amb explicació de cada falta",
+    "Veu catalana per escoltar-los",
+  ],
+};
 
 export function Pricing() {
-  // El text surt de la mateixa configuracio que fa funcionar el cobrament:
-  // mentre Stripe no hi sigui, "S'obre aviat" es la veritat; el dia que s'hi
-  // posin les claus, el boto passara a vendre sol, sense tocar res mes.
-  const esPotPagar = stripeConfigurat();
   return (
     <section id="preus" className="border-b py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Comença gratis, paga només si t&apos;ajuda
+            Practica gratis, al teu ritme
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Sense permanència i sense lletra petita.
+            Sense lletra petita.
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
-          {INDIVIDUAL.map((plan) => (
-            <Card
-              key={plan.name}
-              className={plan.highlight ? "border-primary shadow-lg shadow-primary/10" : ""}
-            >
-              <CardHeader>
-                {plan.highlight && !esPotPagar && <Badge className="mb-2 w-fit">S&apos;obre aviat</Badge>}
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
-                <p className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">{plan.period}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
-              </CardHeader>
-              <CardContent className="flex h-full flex-col gap-6">
-                <ul className="flex-1 space-y-2.5">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className="w-full"
-                  variant={plan.highlight ? "default" : "outline"}
-                  nativeButton={false}
-                  render={<a href="/login" />}
-                >
-                  {plan.highlight ? (esPotPagar ? "Subscriu-te" : "Avisa'm quan s'obri") : "Començar gratis"}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mx-auto max-w-md">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">{GRATUIT.name}</CardTitle>
+              <p className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-bold">{GRATUIT.price}</span>
+                <span className="text-sm text-muted-foreground">{GRATUIT.period}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">{GRATUIT.description}</p>
+            </CardHeader>
+            <CardContent className="flex h-full flex-col gap-6">
+              <ul className="flex-1 space-y-2.5">
+                {GRATUIT.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className="w-full"
+                variant="outline"
+                nativeButton={false}
+                render={<a href="/login" />}
+              >
+                Començar gratis
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mx-auto mt-8 flex max-w-3xl flex-wrap items-center justify-between gap-4 rounded-lg border border-dashed p-5">

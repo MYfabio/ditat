@@ -36,8 +36,14 @@ export type EntregaHistorial = {
  * a fer. Repetir crea una entrega nova, i les dues queden a la llista: aixi es
  * veu si la segona vegada ha anat millor.
  */
-export function Historial({ entregues }: { entregues: EntregaHistorial[] }) {
-  const [obert, setObert] = useState<string | null>(null);
+export function Historial({
+  entregues,
+  obertPerDefecte = null,
+}: {
+  entregues: EntregaHistorial[];
+  obertPerDefecte?: string | null;
+}) {
+  const [obert, setObert] = useState<string | null>(obertPerDefecte);
   const [repetint, setRepetint] = useState<string | null>(null);
 
   if (entregues.length === 0) {

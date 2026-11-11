@@ -1,4 +1,4 @@
-import { DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
+import { DICTATS_GRATUITS_AL_MES } from "@/lib/subscription";
 
 /**
  * Dades estructurades per als cercadors.
@@ -38,13 +38,6 @@ export function StructuredData() {
             price: "0",
             priceCurrency: "EUR",
             description: `${DICTATS_GRATUITS_AL_MES} dictats al mes`,
-          },
-          {
-            "@type": "Offer",
-            name: "Il·limitat",
-            price: String(PREU_MENSUAL_EUR),
-            priceCurrency: "EUR",
-            description: "Dictats sense límit i correcció per foto",
           },
         ],
       },

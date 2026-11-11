@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Users, GraduationCap, FileText, ScanLine } from "lucide-react";
 import { ruleLabel } from "@/lib/dictation-rules";
+import { AltaUsuariForm } from "../../alta-usuari-form";
+import { EsborrarUsuariBoto } from "../../esborrar-usuari-boto";
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadministrador",
@@ -186,6 +188,17 @@ export default async function SchoolDetailPage(props: PageProps<"/admin/centre/[
             <CardTitle className="text-base">Persones del centre</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            {/* El centre ja pot donar d'alta i treure la seva gent; el
+                superadministrador ho ha de poder fer igual sense haver d'entrar
+                amb el compte de la coordinació. */}
+            <div className="border-b p-4">
+              <p className="mb-1 text-sm font-medium">Donar d&apos;alta una persona en aquest centre</p>
+              <p className="mb-4 text-xs text-muted-foreground">
+                El rol i el centre queden preparats per quan entri per primera vegada amb el seu
+                compte.
+              </p>
+              <AltaUsuariForm schools={[]} centreFix={school.id} />
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -193,6 +206,7 @@ export default async function SchoolDetailPage(props: PageProps<"/admin/centre/[
                     <TableHead>Persona</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead>Grup</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -211,11 +225,16 @@ export default async function SchoolDetailPage(props: PageProps<"/admin/centre/[
                         <TableCell className="text-muted-foreground">
                           {school.classGroups.find((c) => c.id === u.classGroupId)?.name ?? "—"}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {u.id !== session.user.id && (
+                            <EsborrarUsuariBoto userId={u.id} nom={u.name || u.email} />
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
                         Encara no hi ha ningú en aquest centre.
                       </TableCell>
                     </TableRow>

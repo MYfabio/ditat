@@ -12,15 +12,15 @@ import { RuleHelpReview } from "./rule-help-review";
 import { ConversesReview, type ConversaPerRevisar } from "./converses-review";
 import { topicPerId } from "@/lib/conversa-topics";
 import { ClassRoster, type RosterStudent } from "./class-roster";
+import { GroupBreakdown, type GroupStatView } from "./group-breakdown";
 import { FilterBar } from "@/components/dashboard/filter-bar";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { createOwnClassGroup, addStudentToOwnGroup } from "./actions";
-import { JoinCodeCard, type GroupWithCode } from "./join-code-card";
-import { ruleLabel, GRADE_LEVELS } from "@/lib/dictation-rules";
+import { ruleLabel } from "@/lib/dictation-rules";
 import { parseNeedsProfile } from "@/lib/needs-profile";
 import type { Annotation } from "@/lib/annotations";
+import { comparaAmbGrup, mitjanaDelGrup, mitjanaSetmanal } from "@/lib/group-evolution";
 
 type EvaluationError = { paraulaOriginal: string; paraulaEscrita: string; explicacio: string };
 type CorrectedData = {
@@ -29,11 +29,7 @@ type CorrectedData = {
   annotations?: Annotation[];
 } | null;
 
-async function loadTeacherData(
-  teacherId: string,
-  schoolId: string | null,
-  filters: { q?: string; grup?: string }
-) {
+async function loadTeacherData(teacherId: string, filters: { q?: string; grup?: string }) {
   // Cerca per nom o correu de l'alumne i filtre per grup classe.
   const search = filters.q?.trim();
   const searchFilter = search
@@ -47,7 +43,7 @@ async function loadTeacherData(
   const groupFilter = filters.grup ? { classGroupId: filters.grup } : {};
 
   try {
-    const [classGroups, dictations, students, schoolStudents, converses] = await Promise.all([
+    const [classGroups, dictations, students, converses, entregues, ultimaConversa] = await Promise.all([
       prisma.classGroup.findMany({
         where: { teacherId },
         include: { _count: { select: { students: true } } },
@@ -72,34 +68,85 @@ async function loadTeacherData(
         include: {
           improvementReports: { orderBy: { createdAt: "desc" }, take: 1 },
           classGroup: { select: { name: true } },
-          // L'evolucio es calcula aqui i no es llegeix de l'informe guardat:
-          // un informe antic no la porta, i el docent veuria el requadre buit
-          // fins que algu el regenerés.
-          submissions: {
-            where: { score: { not: null } },
-            select: { score: true },
-            orderBy: { createdAt: "asc" },
-          },
         },
       }),
-      schoolId
-        ? prisma.user.findMany({
-            where: { role: "STUDENT", schoolId },
-            select: { id: true, name: true, email: true, classGroup: { select: { name: true } } },
-            orderBy: { name: "asc" },
-          })
-        : Promise.resolve([]),
       prisma.conversa.findMany({
         where: { student: { classGroup: { teacherId } } },
         include: { student: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
         take: 30,
       }),
+      // Totes les entregues de l'alumnat del docent, no nomes les de l'alumnat
+      // que surt al filtre: la mitjana d'un grup s'ha de calcular amb tot el grup.
+      prisma.submission.findMany({
+        where: { student: { classGroup: { teacherId } } },
+        select: {
+          studentId: true,
+          score: true,
+          createdAt: true,
+          dictation: { select: { title: true } },
+          student: { select: { classGroupId: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.conversa.groupBy({
+        by: ["studentId"],
+        where: { student: { classGroup: { teacherId } } },
+        _max: { createdAt: true },
+      }),
     ]);
-    return { dbAvailable: true as const, classGroups, dictations, students, schoolStudents, converses };
+    return {
+      dbAvailable: true as const,
+      classGroups,
+      dictations,
+      students,
+      converses,
+      entregues,
+      ultimaConversa: new Map<string, Date | null>(
+        ultimaConversa.map((r): [string, Date | null] => [r.studentId, r._max.createdAt])
+      ),
+    };
   } catch {
     return { dbAvailable: false as const };
   }
+}
+
+type DictationForStats = {
+  title: string;
+  targetRule: string;
+  submissions: { score: number | null; correctedData: unknown }[];
+};
+
+/**
+ * Errors mes freqüents i puntuacio mitjana per dictat, a partir d'una llista
+ * de dictats. Serveix tant per al resum de tota la classe com per al
+ * desglossament per grup: nomes canvia quins dictats se li passen.
+ */
+function statsFor(dictations: DictationForStats[]) {
+  const errorTally = new Map<string, number>();
+  for (const d of dictations) {
+    for (const s of d.submissions) {
+      const corrected = s.correctedData as CorrectedData;
+      for (const err of corrected?.errors ?? []) {
+        const key = err.paraulaOriginal.toLowerCase();
+        errorTally.set(key, (errorTally.get(key) ?? 0) + 1);
+      }
+    }
+  }
+  const topErrors = [...errorTally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxErrorCount = topErrors[0]?.[1] ?? 1;
+
+  const progress = dictations
+    .map((d) => {
+      const scored = d.submissions.filter((s) => s.score !== null);
+      const avg = scored.length
+        ? Math.round(scored.reduce((sum, s) => sum + (s.score ?? 0), 0) / scored.length)
+        : null;
+      return { title: d.title, rule: ruleLabel(d.targetRule), avg, count: d.submissions.length };
+    })
+    .filter((p): p is { title: string; rule: string; avg: number; count: number } => p.avg !== null);
+
+  return { topErrors, maxErrorCount, progress };
 }
 
 /**
@@ -120,13 +167,120 @@ function evolucioDe(punts: number[]): StudentProfileView["progressio"] {
   return { punts, tendencia: salt >= 5 ? "millora" : salt <= -5 ? "empitjora" : "estable", inici, ara };
 }
 
+type EntregaDelDocent = {
+  studentId: string;
+  score: number | null;
+  createdAt: Date;
+  dictation: { title: string };
+  student: { classGroupId: string | null };
+};
+
+type AlumneDelDocent = {
+  id: string;
+  name: string | null;
+  email: string;
+  classGroupId: string | null;
+  classGroup: { name: string } | null;
+  improvementReports: { weaknessMetrics: unknown }[];
+};
+
+const dataCurta = (d: Date) =>
+  d.toLocaleDateString("ca-ES", { day: "2-digit", month: "short", year: "numeric" });
+
+/**
+ * El perfil de cada alumne del docent. Les observacions i les regles surten de
+ * l'informe guardat; l'activitat, la millor nota, les darreres entregues i
+ * l'evolucio es calculen aqui a partir de totes les entregues, perque un
+ * informe antic no les porta.
+ */
+function construeixPerfils(
+  alumnes: AlumneDelDocent[],
+  entregues: EntregaDelDocent[],
+  ultimaConversa: Map<string, Date | null>
+): StudentProfileView[] {
+  // Les entregues arriben de la mes nova a la mes vella.
+  const perAlumne = new Map<string, EntregaDelDocent[]>();
+  const grupPerAlumne = new Map<string, string | null>();
+  for (const e of entregues) {
+    const llista = perAlumne.get(e.studentId) ?? [];
+    llista.push(e);
+    perAlumne.set(e.studentId, llista);
+    grupPerAlumne.set(e.studentId, e.student.classGroupId);
+  }
+
+  const setmanesPerAlumne = new Map<string, Map<string, number>>();
+  for (const [id, llista] of perAlumne) {
+    const puntuades = llista.flatMap((e) =>
+      e.score === null ? [] : [{ data: e.createdAt, score: e.score }]
+    );
+    setmanesPerAlumne.set(id, mitjanaSetmanal(puntuades));
+  }
+
+  const setmanesDelGrup = new Map<string, Map<string, number>[]>();
+  for (const [id, setmanes] of setmanesPerAlumne) {
+    const grupId = grupPerAlumne.get(id);
+    if (!grupId) continue;
+    const llista = setmanesDelGrup.get(grupId) ?? [];
+    llista.push(setmanes);
+    setmanesDelGrup.set(grupId, llista);
+  }
+  const mitjanaPerGrup = new Map<string, Map<string, number>>();
+  for (const [grupId, llista] of setmanesDelGrup) {
+    mitjanaPerGrup.set(grupId, mitjanaDelGrup(llista));
+  }
+
+  return alumnes
+    .map((alumne): StudentProfileView => {
+      const llista = perAlumne.get(alumne.id) ?? [];
+      const puntuades = llista.filter(
+        (e): e is EntregaDelDocent & { score: number } => e.score !== null
+      );
+      const metrics = alumne.improvementReports[0]?.weaknessMetrics as {
+        totalSubmissions?: number;
+        averageScore?: number;
+        perRule?: StudentProfileView["perRule"];
+        curriculumProgress?: StudentProfileView["curriculumProgress"];
+        observations?: StudentProfileView["observations"];
+      } | null;
+      const grup = alumne.classGroupId ? mitjanaPerGrup.get(alumne.classGroupId) : undefined;
+      const darrera = [llista[0]?.createdAt, ultimaConversa.get(alumne.id)]
+        .filter((d): d is Date => d instanceof Date)
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+
+      return {
+        studentId: alumne.id,
+        studentName: alumne.name || alumne.email,
+        classGroupName: alumne.classGroup?.name ?? null,
+        totalSubmissions: metrics?.totalSubmissions ?? 0,
+        averageScore: metrics?.averageScore ?? 0,
+        perRule: metrics?.perRule ?? [],
+        curriculumProgress: metrics?.curriculumProgress ?? {
+          expected: 0,
+          mastered: 0,
+          pending: [],
+        },
+        observations: metrics?.observations ?? [],
+        progressio: evolucioDe(puntuades.map((e) => e.score).reverse()),
+        ultimaActivitat: darrera ? dataCurta(darrera) : null,
+        millorNota: puntuades.length ? Math.round(Math.max(...puntuades.map((e) => e.score))) : null,
+        darreres: llista.slice(0, 3).map((e) => ({
+          titol: e.dictation.title,
+          data: dataCurta(e.createdAt),
+          score: e.score === null ? null : Math.round(e.score),
+        })),
+        comparacio: grup ? comparaAmbGrup(setmanesPerAlumne.get(alumne.id) ?? new Map(), grup) : null,
+      };
+    })
+    .filter((p) => p.totalSubmissions > 0);
+}
+
 export default async function TeacherPage(props: PageProps<"/teacher">) {
   const session = await auth();
   const params = await props.searchParams;
   const q = typeof params.q === "string" ? params.q : "";
   const grup = typeof params.grup === "string" ? params.grup : "";
   const data = session?.user
-    ? await loadTeacherData(session.user.id, session.user.schoolId, { q, grup })
+    ? await loadTeacherData(session.user.id, { q, grup })
     : { dbAvailable: false as const };
 
   const submissions: ReviewSubmission[] = data.dbAvailable
@@ -152,34 +306,8 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
     : [];
 
   const studentProfiles: StudentProfileView[] = data.dbAvailable
-    ? data.students
-        .map((student) => {
-          const metrics = student.improvementReports[0]?.weaknessMetrics as {
-            totalSubmissions?: number;
-            averageScore?: number;
-            perRule?: StudentProfileView["perRule"];
-            curriculumProgress?: StudentProfileView["curriculumProgress"];
-            observations?: StudentProfileView["observations"];
-          } | null;
-          return {
-            studentId: student.id,
-            studentName: student.name || student.email,
-            totalSubmissions: metrics?.totalSubmissions ?? 0,
-            averageScore: metrics?.averageScore ?? 0,
-            perRule: metrics?.perRule ?? [],
-            curriculumProgress: metrics?.curriculumProgress ?? {
-              expected: 0,
-              mastered: 0,
-              pending: [],
-            },
-            observations: metrics?.observations ?? [],
-            progressio: evolucioDe(student.submissions.map((x) => x.score ?? 0)),
-          };
-        })
-        .filter((p) => p.totalSubmissions > 0)
+    ? construeixPerfils(data.students, data.entregues, data.ultimaConversa)
     : [];
-
-  const schoolStudents = data.dbAvailable ? data.schoolStudents : [];
 
   const conversesPerRevisar: ConversaPerRevisar[] = data.dbAvailable
     ? data.converses.map((c) => {
@@ -204,15 +332,13 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
       })
     : [];
 
-  const groupsWithCode: GroupWithCode[] = data.dbAvailable
-    ? data.classGroups.map((c) => ({
-        id: c.id,
-        name: c.name,
-        gradeLevel: c.gradeLevel,
-        joinCode: c.joinCode,
-        students: c._count.students,
-      }))
-    : [];
+  const grupsResum = data.dbAvailable
+    ? {
+        grups: data.classGroups.length,
+        alumnes: data.classGroups.reduce((n, c) => n + c._count.students, 0),
+        classroom: data.classGroups.filter((c) => c.googleClassroomId).length,
+      }
+    : null;
 
   const roster: RosterStudent[] = data.dbAvailable
     ? data.students.map((s) => ({
@@ -224,26 +350,18 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
       }))
     : [];
 
-  const errorTally = new Map<string, number>();
-  for (const s of submissions) {
-    for (const err of s.errors) {
-      const key = err.paraulaOriginal.toLowerCase();
-      errorTally.set(key, (errorTally.get(key) ?? 0) + 1);
-    }
-  }
-  const topErrors = [...errorTally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const maxErrorCount = topErrors[0]?.[1] ?? 1;
+  const overallStats = data.dbAvailable
+    ? statsFor(data.dictations)
+    : { topErrors: [] as [string, number][], maxErrorCount: 1, progress: [] as { title: string; rule: string; avg: number; count: number }[] };
+  const { topErrors, maxErrorCount, progress } = overallStats;
 
-  const progress = data.dbAvailable
-    ? data.dictations
-        .map((d) => {
-          const scored = d.submissions.filter((s) => s.score !== null);
-          const avg = scored.length
-            ? Math.round(scored.reduce((sum, s) => sum + (s.score ?? 0), 0) / scored.length)
-            : null;
-          return { title: d.title, rule: ruleLabel(d.targetRule), avg, count: d.submissions.length };
-        })
-        .filter((p) => p.avg !== null)
+  const groupStats: GroupStatView[] = data.dbAvailable
+    ? data.classGroups.map((g) => ({
+        groupId: g.id,
+        groupName: g.name,
+        studentCount: g._count.students,
+        ...statsFor(data.dictations.filter((d) => d.classGroupId === g.id)),
+      }))
     : [];
 
   return (
@@ -280,7 +398,14 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Errors ortogràfics més freqüents</CardTitle>
+                <CardTitle className="text-base">
+                  Errors ortogràfics més freqüents
+                  {groupStats.length > 1 && (
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      (tots els grups)
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {topErrors.length === 0 ? (
@@ -308,7 +433,14 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Puntuació mitjana per dictat</CardTitle>
+                <CardTitle className="text-base">
+                  Puntuació mitjana per dictat
+                  {groupStats.length > 1 && (
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      (tots els grups)
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {progress.length === 0 ? (
@@ -338,112 +470,34 @@ export default async function TeacherPage(props: PageProps<"/teacher">) {
               </CardContent>
             </Card>
 
+            <GroupBreakdown groups={groupStats} />
+
             <StudentProfiles profiles={studentProfiles} />
             <ConversesReview converses={conversesPerRevisar} />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-8">
 
+            {/* La gestió dels grups (crear, Classroom, codis, alumnat de cada
+                grup) viu a la seva pàgina: aquí només el resum i la porta. */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Crear un grup classe</CardTitle>
+                <CardTitle className="text-base">Grups classe</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <form
-                  action={createOwnClassGroup}
-                  className="grid gap-4 sm:grid-cols-[2fr_1fr_auto]"
-                >
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="name">Nom del grup</Label>
-                    <Input id="name" name="name" placeholder="4t A" required />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="gradeLevel">Curs</Label>
-                    <select
-                      id="gradeLevel"
-                      name="gradeLevel"
-                      className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                      required
-                    >
-                      {GRADE_LEVELS.map((g) => (
-                        <option key={g.value} value={g.value}>
-                          {g.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="submit" className="w-full">
-                      Crear
-                    </Button>
-                  </div>
-                </form>
-
-                {data.dbAvailable && data.classGroups.length > 0 && (
-                  <div className="border-t pt-4">
-                    <p className="mb-2 text-sm font-medium">Afegir un alumne/a al grup</p>
-                    <form
-                      action={addStudentToOwnGroup}
-                      className="grid gap-4 sm:grid-cols-[2fr_2fr_auto]"
-                    >
-                      <div className="grid gap-1.5">
-                        <Label htmlFor="studentId">Alumne/a del centre</Label>
-                        <select
-                          id="studentId"
-                          name="studentId"
-                          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                          required
-                        >
-                          {schoolStudents.length === 0 ? (
-                            <option value="">Cap alumne/a disponible</option>
-                          ) : (
-                            schoolStudents.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name || s.email}
-                                {s.classGroup ? ` — ara a ${s.classGroup.name}` : ""}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                      <div className="grid gap-1.5">
-                        <Label htmlFor="classGroupId">Al grup</Label>
-                        <select
-                          id="classGroupId"
-                          name="classGroupId"
-                          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                          required
-                        >
-                          {data.classGroups.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          type="submit"
-                          variant="outline"
-                          className="w-full"
-                          disabled={schoolStudents.length === 0}
-                        >
-                          Afegir
-                        </Button>
-                      </div>
-                    </form>
-                    {schoolStudents.length === 0 && (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Encara no hi ha cap alumne/a al centre. La coordinació els ha
-                        d&apos;importar primer.
-                      </p>
-                    )}
-                  </div>
-                )}
+              <CardContent className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  {!grupsResum || grupsResum.grups === 0
+                    ? "Encara no tens cap grup. Crea'n un o importa'l de Google Classroom."
+                    : `${grupsResum.grups} ${grupsResum.grups === 1 ? "grup" : "grups"} · ${grupsResum.alumnes} alumnes` +
+                      (grupsResum.classroom > 0 ? ` · ${grupsResum.classroom} de Classroom` : "") +
+                      ". Codis de classe, Classroom i l'alumnat de cada grup."}
+                </p>
+                <Button nativeButton={false} render={<Link href="/teacher/grups" />}>
+                  Gestiona els grups
+                  <ArrowRight className="size-4" />
+                </Button>
               </CardContent>
             </Card>
-
-            <JoinCodeCard groups={groupsWithCode} />
 
             <FilterBar
               action="/teacher"

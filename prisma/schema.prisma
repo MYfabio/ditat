@@ -75,6 +75,13 @@ model User {
   role          Role      @default(STUDENT)
   needsProfile  Json?
 
+  /// Intenció declarada en el primer accés: "teacher" o "student". Nomes es
+  /// una preferencia d'UX (a quin panell l'enviem per defecte) i es desa una
+  /// sola vegada -- MAI un permis: el rol real que dona accés a dades
+  /// d'alumnat (TEACHER/SCHOOL_COORD) nomes el pot atorgar la coordinació
+  /// del centre, a school/actions.ts.
+  signupIntent String?
+
   /// Nivell que es prepara qui aprèn pel seu compte, sense cap grup classe
   /// ("B2", "C1"...). Els alumnes d'un centre no el fan servir: el seu nivell
   /// surt del curs del grup.
@@ -115,6 +122,7 @@ model User {
   submissions            Submission[]        @relation("StudentSubmissions")
   improvementReports     ImprovementReport[] @relation("StudentReports")
   converses              Conversa[]
+  googleConnection       GoogleConnection?
 
   @@index([schoolId])
   @@index([classGroupId])
@@ -137,6 +145,20 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+/// Connexió d'un docent amb Google Classroom (consentiment incremental, només
+/// lectura). Separada del compte d'accés: entrar a dictats.cat no dona mai
+/// permís sobre Classroom, cal demanar-lo a part. Tokens xifrats en repòs.
+model GoogleConnection {
+  userId                String   @id
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessTokenEncrypted  String   @db.Text
+  refreshTokenEncrypted String?  @db.Text
+  expiresAt             DateTime
+  scopes                String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Session {
@@ -168,6 +190,14 @@ model ClassGroup {
   // Codi curt que el docent comparteix amb la classe perquè l'alumnat s'hi
   // apunti sol, en lloc d'haver-los d'assignar un per un.
   joinCode String? @unique
+
+  /// Curs de Google Classroom del qual prové el grup. Clau única: tornar a
+  /// importar el mateix curs actualitza el grup, mai en crea un de duplicat.
+  googleClassroomId String?   @unique
+  /// Nom i secció del curs tal com surten a Classroom, per reconèixer-lo.
+  googleCourseName  String?
+  /// Última vegada que es va sincronitzar l'alumnat des de Classroom.
+  classroomSyncedAt DateTime?
 
   schoolId String
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)

@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { GraduationCap, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const INTENT_PER_PERFIL: Record<"aprendre" | "docent", "student" | "teacher"> = {
+  aprendre: "student",
+  docent: "teacher",
+};
 
 /**
  * La primera pregunta abans d'entrar: vens a aprendre o ets docent?
@@ -12,9 +18,24 @@ import { Button } from "@/components/ui/button";
  * canvia cap permis —el rol de docent l'assigna la coordinacio, MAI un mateix,
  * perque dona acces a dades d'alumnat— pero posa cadascu al cami que li toca
  * abans que es faci el compte, que es quan encara no s'ha liat res.
+ *
+ * La tria viatja com a `?intent=` fins a /dashboard (via SSOButtons /
+ * EmailLoginForm, que ja llegeixen l'URL per construir el callbackUrl), on es
+ * desa un sol cop al compte. Aixi es recorda entre dispositius sense afegir
+ * cap pantalla nova despres del login.
  */
 export function TriaPerfil({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [perfil, setPerfil] = useState<"aprendre" | "docent" | null>(null);
+
+  function tria(nou: "aprendre" | "docent") {
+    setPerfil(nou);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("intent", INTENT_PER_PERFIL[nou]);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   if (perfil === null) {
     return (
@@ -22,7 +43,7 @@ export function TriaPerfil({ children }: { children: ReactNode }) {
         <p className="text-sm font-medium">Què hi véns a fer?</p>
         <button
           type="button"
-          onClick={() => setPerfil("aprendre")}
+          onClick={() => tria("aprendre")}
           className="flex w-full items-center gap-3 rounded-lg border p-4 text-left hover:border-primary hover:bg-primary/5"
         >
           <GraduationCap className="size-6 shrink-0 text-primary" />
@@ -35,7 +56,7 @@ export function TriaPerfil({ children }: { children: ReactNode }) {
         </button>
         <button
           type="button"
-          onClick={() => setPerfil("docent")}
+          onClick={() => tria("docent")}
           className="flex w-full items-center gap-3 rounded-lg border p-4 text-left hover:border-primary hover:bg-primary/5"
         >
           <School className="size-6 shrink-0 text-primary" />

@@ -19,10 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { School, Users, FileText, ScanLine, ShieldCheck } from "lucide-react";
-import { createSchool, updateUserRole, deleteSchool, deleteUser } from "./actions";
+import { createSchool, updateUserRole, deleteSchool } from "./actions";
 import { ConfirmButton } from "@/components/dashboard/confirm-button";
 import { FilterBar } from "@/components/dashboard/filter-bar";
 import { GrowthPanel } from "./growth-panel";
+import { AltaUsuariForm } from "./alta-usuari-form";
+import { EsborrarUsuariBoto } from "./esborrar-usuari-boto";
 import { carregaEmbut } from "@/lib/growth-metrics";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -167,9 +169,20 @@ export default async function AdminPage(props: PageProps<"/admin">) {
               <CardContent>
                 <p className="mb-4 text-sm text-muted-foreground">
                   Qui entra amb Google o Microsoft es crea sempre com a alumne/a. Des d&apos;aquí
-                  se li dona el rol que li toca: la coordinació del centre i el professorat
-                  s&apos;han d&apos;assignar en aquesta taula.
+                  se li dona el rol que li toca, se&apos;l dona d&apos;alta abans que entri o
+                  se l&apos;esborra del tot, sigui del centre que sigui.
                 </p>
+
+                <div className="mb-6 rounded-md border p-4">
+                  <p className="mb-1 text-sm font-medium">Donar d&apos;alta un usuari</p>
+                  <p className="mb-4 text-xs text-muted-foreground">
+                    Així el rol i el centre ja estan preparats quan entri per primera vegada. Si el
+                    correu ja existeix, canvia&apos;l des de la taula de sota.
+                  </p>
+                  <AltaUsuariForm
+                    schools={data.dbAvailable ? data.schools.map((s) => ({ id: s.id, name: s.name })) : []}
+                  />
+                </div>
 
                 <FilterBar
                   action="/admin"
@@ -274,26 +287,16 @@ export default async function AdminPage(props: PageProps<"/admin">) {
                                 algu s'esborri a si mateix, i un boto que sembla que
                                 hi es pero no fa res sembla una avaria. */}
                             {u.id !== session?.user?.id && (
-                              <form action={deleteUser}>
-                                <input type="hidden" name="userId" value={u.id} />
-                                <ConfirmButton
-                                  size="icon-sm"
-                                  label={`Esborrar ${u.name || u.email}`}
-                                  message={`Vols esborrar ${u.name || u.email} del tot?
-
-S'esborren el seu compte, les seves entregues i els seus informes. Els dictats que hagi fet per a una classe es conserven. Aixo no es pot desfer.`}
-                                >
-                                  {""}
-                                </ConfirmButton>
-                              </form>
+                              <EsborrarUsuariBoto userId={u.id} nom={u.name || u.email} />
                             )}
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          Encara no hi ha cap usuari. Han d&apos;entrar un cop amb el seu compte.
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No hi ha cap usuari que hi encaixi. Dona&apos;n d&apos;alta un amb el
+                          formulari de dalt.
                         </TableCell>
                       </TableRow>
                     )}

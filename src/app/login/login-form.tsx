@@ -40,6 +40,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   EmailSignin: "No s'ha pogut enviar el correu d'accés. Torna-ho a provar d'aquí a una estona.",
 };
 
+/**
+ * Afegeix `?intent=` (la tria de tria-perfil.tsx) al callbackUrl abans
+ * d'entrar-hi, perque quedi disponible a /dashboard just despres de
+ * l'autenticacio i es pugui desar al compte.
+ */
+function withIntent(callbackUrl: string, intent: string | null): string {
+  if (!intent) return callbackUrl;
+  const url = new URL(callbackUrl, "http://dummy.invalid");
+  url.searchParams.set("intent", intent);
+  return url.pathname + url.search;
+}
+
 export function LoginError() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
@@ -66,7 +78,7 @@ export function SSOButtons({
   hasMicrosoft: boolean;
 }) {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = withIntent(searchParams.get("callbackUrl") || "/dashboard", searchParams.get("intent"));
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
   return (
@@ -122,7 +134,7 @@ export function SSOButtons({
  */
 export function EmailLoginForm({ altaLliure = true }: { altaLliure?: boolean }) {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = withIntent(searchParams.get("callbackUrl") || "/dashboard", searchParams.get("intent"));
   const [mode, setMode] = useState<"entrar" | "alta">("entrar");
   const [nom, setNom] = useState("");
   const [cognoms, setCognoms] = useState("");

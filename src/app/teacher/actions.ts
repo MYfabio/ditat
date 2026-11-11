@@ -5,20 +5,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { type NeedsProfile } from "@/lib/needs-profile";
 import { Prisma } from "@prisma/client";
-import { generateJoinCode } from "@/lib/join-code";
+import { freeJoinCode } from "@/lib/join-code-server";
 import { isKnownSkill } from "@/lib/skill-taxonomy";
 import { refreshLearningProfile } from "@/lib/adaptive-dictations";
-
-/** Busca un codi que no estigui ja en ús. */
-async function freeJoinCode() {
-  for (let i = 0; i < 10; i++) {
-    const code = generateJoinCode();
-    const taken = await prisma.classGroup.findUnique({ where: { joinCode: code } });
-    if (!taken) return code;
-  }
-  // Amb 31^6 combinacions això no hauria de passar mai; si passa, s'allarga.
-  return generateJoinCode(8);
-}
+import { revalidaGrups } from "./grups/revalida";
 
 /**
  * Torna a generar el codi d'un grup. Serveix quan un codi s'ha escampat més
@@ -48,7 +38,7 @@ export async function regenerateJoinCode(formData: FormData) {
     where: { id: classGroupId },
     data: { joinCode: await freeJoinCode() },
   });
-  revalidatePath("/teacher");
+  revalidaGrups();
 }
 
 /**
@@ -81,8 +71,7 @@ export async function createOwnClassGroup(formData: FormData) {
     },
   });
 
-  revalidatePath("/teacher");
-  revalidatePath("/school");
+  revalidaGrups();
 }
 
 /** Afegeix al grup del docent un alumne que ja existeix al seu centre. */
@@ -115,7 +104,7 @@ export async function addStudentToOwnGroup(formData: FormData) {
   }
 
   await prisma.user.update({ where: { id: studentId }, data: { classGroupId } });
-  revalidatePath("/teacher");
+  revalidaGrups();
 }
 
 /** Comprova que qui fa l'acció té aquest alumne a classe. */
@@ -145,7 +134,7 @@ export async function removeStudentFromGroup(formData: FormData) {
   await requireOwnStudent(studentId);
 
   await prisma.user.update({ where: { id: studentId }, data: { classGroupId: null } });
-  revalidatePath("/teacher");
+  revalidaGrups();
 }
 
 /**
@@ -158,7 +147,7 @@ export async function deleteStudent(formData: FormData) {
   await requireOwnStudent(studentId);
 
   await prisma.user.delete({ where: { id: studentId } });
-  revalidatePath("/teacher");
+  revalidaGrups();
 }
 
 /**
@@ -186,8 +175,7 @@ export async function deleteClassGroup(formData: FormData) {
   if (!allowed) throw new Error("Aquest grup no és teu.");
 
   await prisma.classGroup.delete({ where: { id: classGroupId } });
-  revalidatePath("/teacher");
-  revalidatePath("/school");
+  revalidaGrups();
 }
 
 /**

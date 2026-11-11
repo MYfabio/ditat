@@ -35,7 +35,7 @@ export function DashboardHeader({
           <Badge variant="secondary">{ROLE_LABELS[role] ?? role}</Badge>
         </div>
         <div className="flex items-center gap-2">
-          <UserMenu name={userName} email={userEmail} />
+          <UserMenu name={userName} email={userEmail} role={role} />
           <SignOutButton />
         </div>
       </div>

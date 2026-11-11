@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -107,8 +108,14 @@ function computeStreak(dates: Date[]) {
   return streak;
 }
 
-export default async function StudentPage() {
+export default async function StudentPage(props: PageProps<"/student">) {
   const session = await auth();
+  const sp = await props.searchParams;
+  const rolSessio = session?.user?.role;
+  // Docents i superadmin poden obrir aquesta pantalla en mode prova, per veure
+  // com l'espai d'alumne. Les dades que surten són les seves, no les d'un alumne.
+  const vistaProva = sp.vista === "prova" && (rolSessio === "TEACHER" || rolSessio === "SUPERADMIN");
+  const tornarAlPanell = rolSessio === "SUPERADMIN" ? "/admin" : "/teacher";
   const data = session?.user
     ? await loadStudentData(session.user.id, session.user.classGroupId)
     : { dbAvailable: false as const };
@@ -238,6 +245,20 @@ export default async function StudentPage() {
       <main className="mx-auto max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6">
         {!data.dbAvailable && <DbNotice />}
 
+        {vistaProva && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm"
+          >
+            <span>
+              {"Vista de prova: així veu l'espai un alumne. Les dades que veus són les teves, no les d'un alumne real."}
+            </span>
+            <Link href={tornarAlPanell} className="font-medium underline">
+              Tornar al meu panell
+            </Link>
+          </div>
+        )}
+
         {/* El codi només surt mentre l'alumne no té classe: és l'única cosa
             que ha de fer per començar. Un cop hi és, pertany al seu grup i la
             pantalla és només per treballar. Les adaptacions les decideix el
@@ -247,13 +268,15 @@ export default async function StudentPage() {
             les dues coses feia que un dictat pendent quedes despres de quatre
             insignies i una llista de notes. */}
         <UrlTabs defaultValue="perfer" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="perfer">
+          <TabsList className="h-auto w-full flex-wrap gap-1 p-1.5 sm:w-auto">
+            <TabsTrigger value="perfer" className="px-4 py-2.5 text-base">
               Per fer{pendents.length > 0 ? ` (${pendents.length})` : ""}
             </TabsTrigger>
-            <TabsTrigger value="conversa">Conversa</TabsTrigger>
-            <TabsTrigger value="progres">Els meus progressos</TabsTrigger>
-            {autonom && <TabsTrigger value="compte">El meu compte</TabsTrigger>}
+            <TabsTrigger value="conversa" className="px-4 py-2.5 text-base">Conversa</TabsTrigger>
+            <TabsTrigger value="progres" className="px-4 py-2.5 text-base">Els meus progressos</TabsTrigger>
+            {autonom && (
+              <TabsTrigger value="compte" className="px-4 py-2.5 text-base">El meu compte</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="perfer" className="space-y-4">
@@ -275,6 +298,22 @@ export default async function StudentPage() {
               </div>
             ) : (
               <DictationQueue pending={pendents} sentencesPerChunk={sentencesPerChunk(needs)} />
+            )}
+
+            {/* La darrera correccio, a la vista de qui entra: es pot mirar sense
+                anar a cap altra pestanya. */}
+            {historial.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">La teva última correcció</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Historial entregues={historial.slice(0, 1)} obertPerDefecte={historial[0].id} />
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Totes les teves correccions i el teu progrés són a «Els meus progressos».
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {/* L'accio que genera feina va amb la feina, no en una targeta de
