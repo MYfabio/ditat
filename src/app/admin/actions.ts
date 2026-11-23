@@ -7,6 +7,7 @@ import type { PlanType, Role } from "@prisma/client";
 import { normaliseDomain } from "@/lib/domain";
 import { profileFromSchoolPresets } from "@/lib/needs-profile";
 import { getStripe } from "@/lib/stripe";
+import { enviarAvis } from "@/lib/avisos";
 
 async function requireSuperadmin() {
   const session = await auth();
@@ -136,6 +137,8 @@ export async function createUserByAdmin(formData: FormData): Promise<AltaUsuariR
     },
   });
 
+  // Avís a n8n: només el rol, mai el nom ni el correu. Si falla, l'alta ja està feta.
+  await enviarAvis({ tipus: "alta.validada", centre: null, datos: { rol: role.toLowerCase() } });
   revalidatePath("/admin");
   // L'alta també es pot fer des de la fitxa del centre: ha de sortir-hi de seguida.
   if (schoolId) revalidatePath(`/admin/centre/${schoolId}`);
