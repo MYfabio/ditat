@@ -8,7 +8,7 @@ import { createHmac } from "node:crypto";
  */
 const TEMPS_MAXIM_MS = 3000;
 
-export type TipusAvis = "alta.validada" | "rol.canvi" | "error";
+export type TipusAvis = "alta.solicitud" | "alta.validada" | "baixa" | "rol.canvi" | "error";
 
 export type Avis = {
   tipus: TipusAvis;
@@ -27,6 +27,20 @@ export function dominiDe(correu: unknown): string | null {
   if (arrova < 1) return null;
   const domini = text.slice(arrova + 1);
   return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(domini) ? domini : null;
+}
+
+export type RolComu = "alumne" | "docent" | "coordinacio" | "admin" | "altre";
+
+const ROLS_COMUNS: Record<string, RolComu> = {
+  student: "alumne", alumne: "alumne", alumna: "alumne", alumnat: "alumne",
+  teacher: "docent", docent: "docent", docent_aula: "docent", bibliotecari: "docent", professor: "docent", responsable_taller: "docent",
+  coord: "coordinacio", school_coord: "coordinacio", coordinador: "coordinacio", coordinadora: "coordinacio", coordinacio: "coordinacio", direccio: "coordinacio",
+  superadmin: "admin", admin: "admin", administrador: "admin", administradora: "admin", admin_centre: "admin",
+};
+
+/** Tradueix el rol propi de l'app a un dels rols comuns d'aulaia.cat (docs/endoll-comu.md). */
+export function rolComu(rol: unknown): RolComu {
+  return ROLS_COMUNS[String(rol ?? "").trim().toLowerCase()] ?? "altre";
 }
 
 export async function enviarAvis(avis: Avis): Promise<boolean> {
