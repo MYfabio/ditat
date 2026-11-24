@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { metadadesPublica } from "@/lib/seo";
 import { GraduationCap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/landing/site-footer";
@@ -12,12 +13,11 @@ const DESCRIPCIO =
   "o de superior. Fes-ne un ara mateix sense registrar-te: l'escoltes, l'escrius i et diem " +
   "cada falta i per què.";
 
-export const metadata: Metadata = {
-  title: TITOL,
-  description: DESCRIPCIO,
-  alternates: { canonical: "/dictats-c1-c2" },
-  openGraph: { title: TITOL, description: DESCRIPCIO, url: "/dictats-c1-c2" },
-};
+export const metadata: Metadata = metadadesPublica({
+  titol: TITOL,
+  descripcio: DESCRIPCIO,
+  cami: "/dictats-c1-c2",
+});
 
 /**
  * Pagina d'entrada per a qui es prepara un certificat.

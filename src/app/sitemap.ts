@@ -1,8 +1,12 @@
 import type { MetadataRoute } from "next";
+import { URL_PUBLICA } from "@/lib/seo";
 
-/** Les pagines publiques. Les de dins no hi son: demanen sessio. */
+/**
+ * Les pagines publiques. Les de dins no hi son: demanen sessio. La d'entrar
+ * tampoc: no te contingut que algu vulgui trobar en un cercador.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://www.dictats.cat";
+  const base = URL_PUBLICA;
   const ara = new Date();
   return [
     { url: `${base}/`, lastModified: ara, changeFrequency: "weekly", priority: 1 },
@@ -24,7 +28,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
-    { url: `${base}/login`, lastModified: ara, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/privacitat`, lastModified: ara, changeFrequency: "yearly", priority: 0.3 },
   ];
 }

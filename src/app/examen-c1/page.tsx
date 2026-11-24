@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { metadadesPublica } from "@/lib/seo";
 import { GraduationCap, Clock, PenLine, BookOpenCheck, Mic, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/landing/site-footer";
@@ -10,12 +11,11 @@ const DESCRIPCIO =
   "les tres àrees, quant duren, què s'hi demana i on es juga la nota l'ortografia. " +
   "Amb dades oficials i sense mites.";
 
-export const metadata: Metadata = {
-  title: TITOL,
-  description: DESCRIPCIO,
-  alternates: { canonical: "/examen-c1" },
-  openGraph: { title: TITOL, description: DESCRIPCIO, url: "/examen-c1" },
-};
+export const metadata: Metadata = metadadesPublica({
+  titol: TITOL,
+  descripcio: DESCRIPCIO,
+  cami: "/examen-c1",
+});
 
 /**
  * Pagina informativa sobre l'examen del C1.

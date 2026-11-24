@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { DICTATS_GRATUITS_AL_MES } from "@/lib/subscription";
+import { metadadesPublica } from "@/lib/seo";
 
-export const metadata = {
-  title: "Política de privadesa | dictats.cat",
-};
+// El títol ja porta la marca per la plantilla del layout («%s · dictats.cat»).
+export const metadata = metadadesPublica({
+  titol: "Política de privadesa",
+  descripcio:
+    "Quines dades tracta dictats.cat, per a què i amb qui les comparteix: si t'hi has " +
+    "donat d'alta pel teu compte o si hi entres a través del teu centre educatiu.",
+  cami: "/privacitat",
+});
 
 /**
  * Hi ha dues situacions ben diferents i abans el text nomes en descrivia una.

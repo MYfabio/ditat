@@ -38,7 +38,8 @@ const nextConfig: NextConfig = {
         // mateix i l'autoritat es reparteix entre dues adreces. Aqui se li diu
         // que no l'indexi: el domini bo nomes n'hi ha un.
         source: "/:path*",
-        has: [{ type: "host", value: "ditat-production.up.railway.app" }],
+        // Qualsevol adreça *.up.railway.app (no només la d'ara), mai el domini públic.
+        has: [{ type: "host", value: "(?<railway>.+)\\.up\\.railway\\.app" }],
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];

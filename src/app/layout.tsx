@@ -4,6 +4,7 @@ import "@fontsource/opendyslexic/400.css";
 import "@fontsource/opendyslexic/700.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { URL_PUBLICA, DESCRIPCIO_PORTADA as DESCRIPCIO } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,17 +16,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const URL_BASE = "https://www.dictats.cat";
-
-const DESCRIPCIO =
-  "Practica dictats en català adaptats al teu nivell, del A1 al C2. Els escoltes, els " +
-  "escrius i te'ls corregim explicant-te cada falta. Els següents surten dels teus errors. " +
-  "Quatre dictats al mes gratis.";
-
 export const metadata: Metadata = {
   // Sense això, les adreces canòniques i les imatges per compartir surten
   // relatives i els cercadors i el WhatsApp no les saben resoldre.
-  metadataBase: new URL(URL_BASE),
+  metadataBase: new URL(URL_PUBLICA),
   title: {
     default: "dictats.cat · Dictats en català per millorar l'ortografia",
     // Les pàgines de dins posen el seu títol i aquesta plantilla hi afegeix la marca.
@@ -42,24 +36,9 @@ export const metadata: Metadata = {
     "exercicis ortografia catalana",
   ],
   authors: [{ name: "dictats.cat" }],
-  alternates: {
-    // El domini bo és un: sense això, el mateix contingut servit des d'una
-    // altra adreça competeix amb ell mateix als cercadors.
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "ca_ES",
-    url: URL_BASE,
-    siteName: "dictats.cat",
-    title: "Dictats en català per millorar l'ortografia",
-    description: DESCRIPCIO,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Dictats en català per millorar l'ortografia",
-    description: DESCRIPCIO,
-  },
+  // Sense canònica ni Open Graph globals: els posa cada pàgina pública amb
+  // metadadesPublica() (lib/seo.ts). Si fossin aquí, les pàgines privades i la
+  // d'entrar heretarien una canònica que apunta a la portada.
   robots: {
     index: true,
     follow: true,

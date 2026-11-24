@@ -5,7 +5,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const FAQS = [
+// També alimenta el FAQPage de les dades estructurades: el text ha de ser el mateix que es veu.
+export const FAQS = [
   {
     question: "Les dades de l'alumnat estan protegides segons el RGPD?",
     answer:

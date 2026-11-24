@@ -1,9 +1,17 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { SSOButtons, EmailLoginForm, DevMockLoginForm, LoginError } from "./login-form";
 import { demoLoginEnabled } from "@/auth";
 import { TriaPerfil } from "./tria-perfil";
+
+// La pantalla d'entrar no te res que algu vulgui trobar en un cercador: fora de
+// l'index, pero que en segueixi els enllacos (portada, privadesa).
+export const metadata: Metadata = {
+  title: "Entra",
+  robots: { index: false, follow: true },
+};
 
 export default function LoginPage() {
   const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;

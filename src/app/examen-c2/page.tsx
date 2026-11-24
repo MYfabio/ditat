@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { metadadesPublica } from "@/lib/seo";
 import { GraduationCap, Clock, PenLine, BookOpenCheck, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/landing/site-footer";
@@ -10,12 +11,11 @@ const DESCRIPCIO =
   "les tres àrees amb els seus pesos (57%, 16%, 27%), què cal per ser apte i on puntua " +
   "l'ortografia. Amb dades del model oficial.";
 
-export const metadata: Metadata = {
-  title: TITOL,
-  description: DESCRIPCIO,
-  alternates: { canonical: "/examen-c2" },
-  openGraph: { title: TITOL, description: DESCRIPCIO, url: "/examen-c2" },
-};
+export const metadata: Metadata = metadadesPublica({
+  titol: TITOL,
+  descripcio: DESCRIPCIO,
+  cami: "/examen-c2",
+});
 
 /**
  * Pagina informativa sobre l'examen del C2, la parella de /examen-c1.
