@@ -16,6 +16,19 @@ export type Avis = {
   datos: Record<string, string | number | boolean | null>;
 };
 
+/**
+ * El centre que viatja amb l'avís: només el domini del correu (el que va darrere
+ * de la @), mai el correu sencer. Amb això el panell d'aulaia.cat separa
+ * l'Escola Industrial de la resta de centres.
+ */
+export function dominiDe(correu: unknown): string | null {
+  const text = String(correu ?? "").trim().toLowerCase();
+  const arrova = text.lastIndexOf("@");
+  if (arrova < 1) return null;
+  const domini = text.slice(arrova + 1);
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(domini) ? domini : null;
+}
+
 export async function enviarAvis(avis: Avis): Promise<boolean> {
   const url = process.env.N8N_WEBHOOK_URL;
   const secret = process.env.AULAIA_WEBHOOK_SECRET;
