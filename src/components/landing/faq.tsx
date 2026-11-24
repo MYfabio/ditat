@@ -28,9 +28,9 @@ export const FAQS = [
       "Tipografia OpenDyslexic, mode d'alt contrast, lectura de l'àudio amb control de velocitat i fragmentació del text en blocs curts per facilitar el ritme de lectura a l'alumnat amb TDAH.",
   },
   {
-    question: "Puc provar-ho abans de contractar-ho per a tot el centre?",
+    question: "Puc provar-ho abans de fer-ho servir a tot el centre?",
     answer:
-      "Sí, el Pla Aula està pensat perquè un sol docent el provi amb la seva classe abans d'ampliar-ho a tot el centre amb el Pla Escola.",
+      "Sí. Un docent pot començar sol, gratis, amb la seva classe. Si després el centre el vol fer servir, ens ho dieu i ho ajustem a la vostra mida.",
   },
 ];
 

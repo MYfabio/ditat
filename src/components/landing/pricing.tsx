@@ -73,8 +73,8 @@ export function Pricing() {
             <div>
               <p className="font-medium">Ets una escola o un institut?</p>
               <p className="text-sm text-muted-foreground">
-                Per a centres hi ha panell de coordinació, grups classe, adaptacions NEE i
-                factura a nom del centre. Ho parlem i ho ajustem a la vostra mida.
+                Per a centres hi ha panell de coordinació, grups classe i adaptacions NEE.
+                Ho parlem i ho ajustem a la vostra mida.
               </p>
             </div>
           </div>
