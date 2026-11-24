@@ -5,7 +5,7 @@ import { GraduationCap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SampleDictation } from "./sample";
-import { DICTATS_GRATUITS_AL_MES, PREU_MENSUAL_EUR } from "@/lib/subscription";
+import { DICTATS_GRATUITS_AL_MES } from "@/lib/subscription";
 
 const TITOL = "Dictats de nivell C1 i C2 en català";
 const DESCRIPCIO =
@@ -142,11 +142,10 @@ export default function DictatsC1C2() {
 
         <section className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight">
-            Comença gratis, paga només si t&apos;ajuda
+            Comença gratis
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            {DICTATS_GRATUITS_AL_MES} dictats al mes sense pagar res. Si en vols sense
-            límit, {PREU_MENSUAL_EUR} € al mes i pots donar-te de baixa quan vulguis.
+            {DICTATS_GRATUITS_AL_MES} dictats al mes sense pagar res.
           </p>
           <Button size="lg" className="mt-6" nativeButton={false} render={<a href="/login" />}>
             Crear el compte gratis
